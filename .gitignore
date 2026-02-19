@@ -30,8 +30,22 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files (NON committare segreti)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ✅ puoi versionare un template senza segreti
+!.env.example
+
+# logs
+*.log
+
+# drizzle (NO: migrations vanno versionate)
+# NON aggiungere src/db/migrations qui
+
 
 # vercel
 .vercel
@@ -39,3 +53,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/app/generated/prisma
