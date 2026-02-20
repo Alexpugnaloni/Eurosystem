@@ -47,6 +47,7 @@ export default async function AdminUsersPage() {
               <th className="p-3 text-left">Username</th>
               <th className="p-3 text-left">Ruolo</th>
               <th className="p-3 text-left">Attivo</th>
+              <th className="p-3 text-left">Azioni</th>
             </tr>
           </thead>
 
@@ -59,6 +60,14 @@ export default async function AdminUsersPage() {
                 <td className="p-3">{u.username}</td>
                 <td className="p-3">{u.role}</td>
                 <td className="p-3">{u.isActive ? "Sì" : "No"}</td>
+                <td className="p-3">
+                    <Link
+                        href={`/admin/users/${u.id}/edit`}
+                        className="underline"
+                    >
+                        Modifica
+                    </Link>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -67,3 +76,5 @@ export default async function AdminUsersPage() {
     </div>
   );
 }
+
+
