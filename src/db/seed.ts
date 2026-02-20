@@ -4,27 +4,26 @@ import { db } from "./seed-db";
 import { customers, phases, models, customerModels, users } from "./schema";
 
 async function main() {
-  // 1) Crea azienda interna
-  const [internal] = await db
-    .insert(customers)
-    .values({
-      name: "AZIENDA_INTERNA",
-      code: "INT",
-      isInternal: true,
-      isActive: true,
-    })
-    .returning();
+  // 1) Crea azienda interna (unica)
+const [internal] = await db
+  .insert(customers)
+  .values({
+    name: "AZIENDA_INTERNA",
+    isInternal: true,
+    isActive: true,
+  })
+  .returning();
 
-  // 2) Crea due clienti demo (modifica come vuoi)
-  const [cust1] = await db
-    .insert(customers)
-    .values({ name: "Azienda 1", code: "AZ1", isInternal: false, isActive: true })
-    .returning();
+// 2) Crea due clienti demo
+const [cust1] = await db
+  .insert(customers)
+  .values({ name: "Azienda 1", isInternal: false, isActive: true })
+  .returning();
 
-  const [cust2] = await db
-    .insert(customers)
-    .values({ name: "Azienda 2", code: "AZ2", isInternal: false, isActive: true })
-    .returning();
+const [cust2] = await db
+  .insert(customers)
+  .values({ name: "Azienda 2", isInternal: false, isActive: true })
+  .returning();
 
   // 3) Fasi per Azienda 1 (esempio 3 fasi classiche)
   await db.insert(phases).values([
@@ -39,7 +38,7 @@ async function main() {
     { customerId: cust2.id, name: "Robotest (1° collaudo)", sortOrder: 2, isFinal: false, isActive: true },
     { customerId: cust2.id, name: "Assemblaggio", sortOrder: 3, isFinal: false, isActive: true },
     { customerId: cust2.id, name: "Amplitest (2° collaudo)", sortOrder: 4, isFinal: false, isActive: true },
-    { customerId: cust2.id, name: "Pulizia", sortOrder: 5, isFinal: false, isActive: true },
+    { customerId: cust2.id, name: "Pulizia finale prodotto", sortOrder: 5, isFinal: false, isActive: true },
     { customerId: cust2.id, name: "Imballaggio", sortOrder: 6, isFinal: true, isActive: true },
   ]);
 

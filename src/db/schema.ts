@@ -53,18 +53,14 @@ export const customers = pgTable(
   "customers",
   {
     id: bigserial("id", { mode: "bigint" }).primaryKey(),
-
     name: varchar("name", { length: 200 }).notNull(),
-    code: varchar("code", { length: 50 }).notNull(), // codice identificativo
-    isInternal: boolean("is_internal").notNull().default(false), // true solo per "azienda interna"
+    isInternal: boolean("is_internal").notNull().default(false),
     isActive: boolean("is_active").notNull().default(true),
-
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     uxCustomerName: uniqueIndex("ux_customers_name").on(t.name),
-    uxCustomerCode: uniqueIndex("ux_customers_code").on(t.code),
   })
 );
 

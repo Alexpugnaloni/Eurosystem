@@ -32,6 +32,13 @@ export default async function AdminLayout({
             Utenti
           </Link>
 
+          <Link
+            href="/admin/customers"
+            className="rounded-md border px-3 py-2 text-sm text-black hover:bg-gray-100"
+          >
+            Aziende
+          </Link>
+
           <LogoutButton />
         </div>
       </header>
@@ -40,3 +47,5 @@ export default async function AdminLayout({
     </div>
   );
 }
+
+

@@ -22,6 +22,13 @@
       "when": 1771490723209,
       "tag": "0002_stale_ultimo",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1771583117686,
+      "tag": "0003_black_bloodstorm",
+      "breakpoints": true
     }
   ]
 }
