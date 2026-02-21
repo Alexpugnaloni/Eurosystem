@@ -2,6 +2,7 @@ import {
   pgTable,
   pgEnum,
   bigserial,
+  bigint,
   varchar,
   text,
   boolean,
@@ -65,16 +66,23 @@ export const customers = pgTable(
 );
 
 /**
- * MODELS (Prodotti/Modelli - gestiti dall'admin)
- * Nota: anagrafica generale, poi li "colleghi" alle aziende tramite customer_models
+ * MODELS (Prodotti/Modelli - appartengono ad UNA sola azienda)
+ * - PK tecnica: id
+ * - code: opzionale (nullable), ma se presente deve essere unico per azienda
  */
 export const models = pgTable(
   "models",
   {
     id: bigserial("id", { mode: "bigint" }).primaryKey(),
 
+    customerId: bigint("customer_id", { mode: "bigint" })
+      .notNull()
+      .references(() => customers.id),
+
     name: varchar("name", { length: 200 }).notNull(),
-    code: varchar("code", { length: 80 }).notNull(),
+
+    // ✅ opzionale: può essere NULL
+    code: varchar("code", { length: 80 }),
 
     isActive: boolean("is_active").notNull().default(true),
 
@@ -82,8 +90,14 @@ export const models = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    uxModelName: uniqueIndex("ux_models_name").on(t.name),
-    ixModelCode: index("ix_models_code").on(t.code),
+    // ✅ niente più unique globale sul name
+    uxModelCustomerName: uniqueIndex("ux_models_customer_name").on(t.customerId, t.name),
+
+    // ✅ code unico per customer (NULL ammessi, quindi più modelli senza code ok)
+    uxModelCustomerCode: uniqueIndex("ux_models_customer_code").on(t.customerId, t.code),
+
+    ixModelsCustomer: index("ix_models_customer").on(t.customerId),
+    ixModelsCode: index("ix_models_code").on(t.code),
   })
 );
 
