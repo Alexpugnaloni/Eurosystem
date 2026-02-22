@@ -22,6 +22,16 @@ export default function AdminPage() {
         <div className="text-sm text-gray-600">Crea e gestisci prodotti/modelli</div>
       </Link>
 
+      <Link
+        href="/admin/phases"
+        className="block rounded-xl border bg-white p-6 shadow-sm hover:shadow-md"
+      >
+        <h2 className="text-lg font-semibold text-black">Fasi</h2>
+        <p className="text-sm text-gray-600">
+          Gestisci le fasi di produzione per azienda
+        </p>
+      </Link>
+
       <div className="rounded-lg border bg-white p-5 text-sm text-zinc-700 shadow-sm">
         A breve: Aziende, Modelli, Fasi, Consegne, Statistiche…
       </div>

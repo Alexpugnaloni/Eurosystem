@@ -45,6 +45,13 @@ export default async function AdminLayout({
           >
             Modelli
           </Link>
+
+          <Link
+            href="/admin/phases"
+            className="rounded-md border border-gray-300 px-3 py-1 text-sm text-black hover:bg-gray-100"
+          >
+            Fasi
+          </Link>
           
           <LogoutButton />
         </div>
