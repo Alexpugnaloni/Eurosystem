@@ -1,7 +1,7 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { db } from "./seed-db";
-import { customers, phases, models, customerModels, users } from "./schema";
+import { customers, phases, models, users } from "./schema";
 
 async function main() {
   // 1) Crea azienda interna (unica)
@@ -42,17 +42,45 @@ const [cust2] = await db
     { customerId: cust2.id, name: "Imballaggio", sortOrder: 6, isFinal: true, isActive: true },
   ]);
 
-  // 5) Crea modelli demo
-  const [m1] = await db.insert(models).values({ name: "Prodotto A", code: "PA-001", isActive: true }).returning();
-  const [m2] = await db.insert(models).values({ name: "Prodotto B", code: "PB-010", isActive: true }).returning();
-  const [m3] = await db.insert(models).values({ name: "Prodotto C", code: "PC-100", isActive: true }).returning();
+ // 5) Crea modelli demo (ora appartengono a UNA azienda: models.customerId)
+const [m1] = await db
+  .insert(models)
+  .values({
+    customerId: cust1.id,
+    name: "Primo Prodotto",
+    code: "001010",
+    isActive: true,
+  })
+  .returning();
 
+const [m2] = await db
+  .insert(models)
+  .values({
+    customerId: cust1.id,
+    name: "Prodotto A",
+    code: "PA-001",
+    isActive: true,
+  })
+  .returning();
+
+const [m3] = await db
+  .insert(models)
+  .values({
+    customerId: cust2.id,
+    name: "Prodotto C",
+    code: "PC-100",
+    isActive: true,
+  })
+  .returning();
+
+  /*
   // 6) Associa modelli alle aziende (così nei menu filtri per azienda)
   await db.insert(customerModels).values([
     { customerId: cust1.id, modelId: m1.id, isActive: true },
     { customerId: cust1.id, modelId: m2.id, isActive: true },
     { customerId: cust2.id, modelId: m3.id, isActive: true },
   ]);
+*/
 
   // 7) Crea admin (username/password)
   const passwordHash = await bcrypt.hash("admin123", 10);

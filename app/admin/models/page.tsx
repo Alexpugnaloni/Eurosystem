@@ -1,27 +1,79 @@
 // app/admin/models/page.tsx
 
 import { db } from "@/db";
-import { models, customers } from "@/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { customers, models } from "@/db/schema";
+import { asc, eq } from "drizzle-orm";
 import Link from "next/link";
+import ModelsListClient from "./ModelsListClient";
+
+type Row = {
+  modelId: bigint;
+  modelName: string;
+  modelCode: string | null;
+  modelIsActive: boolean;
+
+  customerId: bigint;
+  customerName: string;
+  customerIsInternal: boolean;
+};
 
 export default async function ModelsPage() {
-  const rows = await db
+  const rows: Row[] = await db
     .select({
-      id: models.id,
-      name: models.name,
-      code: models.code,
-      isActive: models.isActive,
+      modelId: models.id,
+      modelName: models.name,
+      modelCode: models.code,
+      modelIsActive: models.isActive,
+
+      customerId: customers.id,
       customerName: customers.name,
+      customerIsInternal: customers.isInternal,
     })
     .from(models)
-    .leftJoin(customers, eq(models.customerId, customers.id))
-    .orderBy(desc(models.createdAt));
+    .innerJoin(customers, eq(models.customerId, customers.id))
+    .orderBy(asc(customers.name), asc(models.name));
+
+  const grouped = new Map<
+    string,
+    {
+      customer: { id: string; name: string; isInternal: boolean };
+      items: { id: string; name: string; code: string | null; isActive: boolean }[];
+    }
+  >();
+
+  for (const r of rows) {
+    const key = r.customerId.toString();
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        customer: {
+          id: key,
+          name: r.customerName,
+          isInternal: r.customerIsInternal,
+        },
+        items: [],
+      });
+    }
+
+    grouped.get(key)!.items.push({
+      id: r.modelId.toString(),
+      name: r.modelName,
+      code: r.modelCode,
+      isActive: r.modelIsActive,
+    });
+  }
+
+  const groups = Array.from(grouped.values());
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-black">Modelli</h1>
+        <div>
+          <h1 className="text-2xl font-semibold text-black">Modelli</h1>
+          <p className="text-sm text-gray-600">
+            Prodotti/modelli raggruppati per azienda.
+          </p>
+        </div>
 
         <Link
           href="/admin/models/new"
@@ -31,58 +83,13 @@ export default async function ModelsPage() {
         </Link>
       </div>
 
-      <div className="overflow-hidden rounded-md border bg-white">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-100 text-left text-black">
-            <tr>
-              <th className="px-4 py-2">Nome</th>
-              <th className="px-4 py-2">Codice</th>
-              <th className="px-4 py-2">Azienda</th>
-              <th className="px-4 py-2">Attivo</th>
-              <th className="px-4 py-2 text-right">Azioni</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((m) => (
-              <tr key={m.id} className="border-t">
-                <td className="px-4 py-2 text-black">{m.name}</td>
-
-                <td className="px-4 py-2 text-black">
-                  {m.code ?? "-"}
-                </td>
-
-                <td className="px-4 py-2 text-black">
-                  {m.customerName}
-                </td>
-
-                <td className="px-4 py-2 text-black">
-                  {m.isActive ? "Sì" : "No"}
-                </td>
-
-                <td className="px-4 py-2 text-right">
-                  <Link
-                    href={`/admin/models/${m.id}/edit`}
-                    className="text-blue-600 hover:underline"
-                  >
-                    Modifica
-                  </Link>
-                </td>
-              </tr>
-            ))}
-
-            {rows.length === 0 && (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-6 text-center text-gray-500"
-                >
-                  Nessun modello presente.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      {groups.length === 0 ? (
+        <div className="rounded-md border bg-white p-6 text-sm text-gray-600">
+          Nessun modello presente.
+        </div>
+      ) : (
+        <ModelsListClient groups={groups} />
+      )}
     </div>
   );
 }
