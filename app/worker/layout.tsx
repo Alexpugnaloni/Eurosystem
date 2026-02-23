@@ -13,7 +13,7 @@ export default async function WorkerLayout({
   if (user.role !== "WORKER") redirect("/admin");
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 text-gray-900">
       <header className="flex items-center justify-between border-b bg-white px-8 py-4">
         <div>
           <div className="text-xl font-semibold text-black">Worker</div>
@@ -34,7 +34,7 @@ export default async function WorkerLayout({
         </div>
       </header>
 
-      <main className="p-8">{children}</main>
+      <main className="p-8 text-gray-900">{children}</main>
     </div>
   );
 }

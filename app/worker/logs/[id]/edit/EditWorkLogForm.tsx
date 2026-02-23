@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
-import { createWorkLogAction, type CreateWorkLogState } from "../actions";
+import { updateWorkLogAction, type CreateWorkLogState } from "../../actions";
 
 type Customer = { id: bigint; name: string };
 type Model = { id: bigint; customerId: bigint; name: string; code: string | null };
@@ -10,47 +10,78 @@ type Phase = { id: bigint; customerId: bigint; name: string; sortOrder: number; 
 
 type ActivityType = "PRODUCTION" | "CLEANING";
 
-export default function CreateWorkLogForm(props: {
+type Log = {
+  id: bigint;
+  workDate: string; // YYYY-MM-DD
+  activityType: ActivityType;
+  customerId: bigint;
+  modelId: bigint | null;
+  phaseId: bigint | null;
+  startTime: string; // HH:MM:SS
+  endTime: string; // HH:MM:SS
+  qtyOk: number;
+  qtyKo: number;
+  notes: string | null;
+};
+
+function hhmm(t: string) {
+  return (t ?? "").slice(0, 5);
+}
+
+function parseNonNegInt(s: string) {
+  const n = Number(String(s ?? "").trim());
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.floor(n));
+}
+
+function todayISOClient() {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+export default function EditWorkLogForm(props: {
+  log: Log;
   customers: Customer[];
   models: Model[];
   phases: Phase[];
-  defaultDate: string;
 }) {
+  // stato iniziale per la server action (serve solo se torna un errore lato server)
   const [serverState, action, pending] = useActionState<CreateWorkLogState, FormData>(
-    createWorkLogAction,
+    updateWorkLogAction,
     {
       values: {
-        workDate: props.defaultDate,
-        activityType: "PRODUCTION",
-        customerId: "",
-        modelId: "",
-        phaseId: "",
-        startTime: "",
-        endTime: "",
-        qtyOk: "0",
-        qtyKo: "0",
-        notes: "",
+        workDate: props.log.workDate,
+        activityType: props.log.activityType,
+        customerId: String(props.log.customerId),
+        modelId: props.log.modelId ? String(props.log.modelId) : "",
+        phaseId: props.log.phaseId ? String(props.log.phaseId) : "",
+        startTime: hhmm(props.log.startTime),
+        endTime: hhmm(props.log.endTime),
+        qtyOk: String(props.log.qtyOk ?? 0),
+        qtyKo: String(props.log.qtyKo ?? 0),
+        notes: props.log.notes ?? "",
       },
     }
   );
 
-  // ✅ Controlled fields (non si resettano)
-  const [activityType, setActivityType] = useState<ActivityType>("PRODUCTION");
-  const [workDate, setWorkDate] = useState(props.defaultDate);
-  const [customerId, setCustomerId] = useState("");
-  const [modelId, setModelId] = useState("");
-  const [phaseId, setPhaseId] = useState("");
-  const [qtyOk, setQtyOk] = useState("0");
-  const [qtyKo, setQtyKo] = useState("0");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [notes, setNotes] = useState("");
+  // ✅ campi controlled (così non “spariscono”)
+  const [activityType, setActivityType] = useState<ActivityType>(props.log.activityType);
+  const [workDate, setWorkDate] = useState(props.log.workDate);
+  const [customerId, setCustomerId] = useState(String(props.log.customerId));
+  const [modelId, setModelId] = useState(props.log.modelId ? String(props.log.modelId) : "");
+  const [phaseId, setPhaseId] = useState(props.log.phaseId ? String(props.log.phaseId) : "");
+  const [qtyOk, setQtyOk] = useState(String(props.log.qtyOk ?? 0));
+  const [qtyKo, setQtyKo] = useState(String(props.log.qtyKo ?? 0));
+  const [startTime, setStartTime] = useState(hhmm(props.log.startTime));
+  const [endTime, setEndTime] = useState(hhmm(props.log.endTime));
+  const [notes, setNotes] = useState(props.log.notes ?? "");
 
-  // ✅ Errori lato client: evitano submit “vuoti” (quindi niente reset)
   const [clientError, setClientError] = useState<string>("");
 
   const isProduction = activityType === "PRODUCTION";
-
   const selectedCustomerId = customerId ? BigInt(customerId) : null;
 
   const filteredModels = useMemo(() => {
@@ -65,7 +96,6 @@ export default function CreateWorkLogForm(props: {
 
   function onChangeCustomer(next: string) {
     setCustomerId(next);
-    // coerente: cambi azienda => reset model/fase
     setModelId("");
     setPhaseId("");
     setClientError("");
@@ -75,7 +105,7 @@ export default function CreateWorkLogForm(props: {
     setActivityType(next);
     setClientError("");
 
-    // ✅ come vuoi tu: se passo a CLEANING resetto i campi produzione
+    // come richiesto: se cambio struttura (pulizie), reset campi produzione
     if (next === "CLEANING") {
       setModelId("");
       setPhaseId("");
@@ -84,88 +114,45 @@ export default function CreateWorkLogForm(props: {
     }
   }
 
-  function parseNonNegInt(s: string) {
-    const n = Number(String(s ?? "").trim());
-    if (!Number.isFinite(n)) return 0;
-    return Math.max(0, Math.floor(n));
-  }
-
   function validateClient(): string | null {
-  // 1) Tipo attività (sempre presente, ma lasciamo la guardia)
-  if (activityType !== "PRODUCTION" && activityType !== "CLEANING") {
-    return "Tipo attività non valido.";
-  }
+    // ordine di compilazione (come vuoi tu)
+    if (!workDate) return "Seleziona la data.";
+    if (workDate > todayISOClient()) return "La data non può essere futura.";
 
-  // 2) Data
-  if (!workDate) {
-    return "Seleziona la data.";
-  }
+    if (!customerId) return "Seleziona l'azienda.";
 
-  // ✅ No date future (consenti passato e oggi)
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const todayISO = `${yyyy}-${mm}-${dd}`;
-  if (workDate > todayISO) {
-    return "La data non può essere futura.";
-  }
+    if (activityType === "PRODUCTION") {
+      if (!modelId) return "Seleziona il modello.";
+      if (!phaseId) return "Seleziona la fase.";
 
-  // 3) Azienda
-  if (!customerId) {
-    return "Seleziona l'azienda.";
-  }
-
-  // 4) Produzione: modello -> fase -> quantità
-  if (activityType === "PRODUCTION") {
-    if (!modelId) {
-      return "Seleziona il modello.";
-    }
-    if (!phaseId) {
-      return "Seleziona la fase.";
+      const ok = parseNonNegInt(qtyOk);
+      const ko = parseNonNegInt(qtyKo);
+      if (ok === 0 && ko === 0) return "Inserisci almeno 1 pezzo (OK o KO).";
     }
 
-    const ok = parseNonNegInt(qtyOk);
-    const ko = parseNonNegInt(qtyKo);
-    if (ok === 0 && ko === 0) {
-      return "Inserisci almeno 1 pezzo (OK o KO).";
-    }
-  }
+    if (!startTime) return "Seleziona l'ora di inizio.";
+    if (!endTime) return "Seleziona l'ora di fine.";
+    if (startTime >= endTime) return "L'orario di fine deve essere dopo l'orario di inizio.";
 
-  // 5) Orari (in ordine: inizio poi fine)
-  if (!startTime) {
-    return "Seleziona l'ora di inizio.";
+    return null;
   }
-  if (!endTime) {
-    return "Seleziona l'ora di fine.";
-  }
-  if (startTime >= endTime) {
-    return "L'orario di fine deve essere dopo l'orario di inizio.";
-  }
-
-  // 6) Note: opzionale, nessuna validazione
-
-  return null;
-}
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     setClientError("");
     const err = validateClient();
     if (err) {
-      e.preventDefault(); // ✅ blocca la server action => niente reset
+      e.preventDefault(); // niente server action => non perdi valori
       setClientError(err);
-      return;
     }
-    // ok: lascia partire la server action
   }
 
   return (
     <div style={{ padding: 16, maxWidth: 820 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
         <div>
-          <h1 style={{ margin: 0 }}>Nuova attività</h1>
+          <h1 style={{ margin: 0 }}>Modifica attività</h1>
           <p style={{ marginTop: 6, color: "#666" }}>
-            Inserisci produzione o pulizie. Nessun overlap permesso.
+            Modifica produzione o pulizie. Nessun overlap permesso.
           </p>
         </div>
 
@@ -183,15 +170,15 @@ export default function CreateWorkLogForm(props: {
         </Link>
       </div>
 
-      {/* ✅ Errore client (prima) */}
       {clientError ? <p style={{ color: "crimson", marginTop: 12 }}>{clientError}</p> : null}
-
-      {/* ✅ Errore server (overlap, check DB, ecc.) */}
       {serverState.error ? (
         <p style={{ color: "crimson", marginTop: clientError ? 8 : 12 }}>{serverState.error}</p>
       ) : null}
 
       <form action={action} onSubmit={handleSubmit} style={{ marginTop: 16 }}>
+        {/* id necessario per update */}
+        <input type="hidden" name="id" value={String(props.log.id)} />
+
         <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: 12 }}>
           <label>
             <div style={{ fontSize: 12, color: "#666" }}>Tipo attività</div>
@@ -378,7 +365,7 @@ export default function CreateWorkLogForm(props: {
               cursor: "pointer",
             }}
           >
-            Salva
+            Salva modifiche
           </button>
 
           <Link href="/worker/logs" style={{ padding: "10px 12px", textDecoration: "none" }}>
@@ -386,10 +373,6 @@ export default function CreateWorkLogForm(props: {
           </Link>
         </div>
       </form>
-
-      <p style={{ marginTop: 12, color: "#888", fontSize: 12 }}>
-        Suggerimento: se cambi Azienda, potresti dover riselezionare Modello/Fase.
-      </p>
     </div>
   );
 }

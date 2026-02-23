@@ -49,6 +49,9 @@ export default function WorkerLogsClient(props: {
     FormData
   >(deleteWorkLogAction, {});
 
+  // ✅ Conferma eliminazione (banner)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
   function applyFilters() {
     const sp = new URLSearchParams();
     if (date) sp.set("date", date);
@@ -156,6 +159,64 @@ export default function WorkerLogsClient(props: {
         <p style={{ color: "crimson", marginTop: 12 }}>{deleteState.error}</p>
       ) : null}
 
+      {/* ✅ Banner conferma eliminazione */}
+      {confirmDeleteId ? (
+        <div
+          style={{
+            marginTop: 12,
+            padding: 12,
+            border: "1px solid #f2c2c2",
+            borderRadius: 12,
+            background: "white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
+          <div style={{ color: "#7a1f1f" }}>
+            <strong>Sei sicuro di voler eliminare questa attività?</strong>
+          </div>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={() => {
+                const fd = new FormData();
+                fd.set("id", confirmDeleteId);
+                deleteAction(fd);
+                setConfirmDeleteId(null);
+              }}
+              style={{
+                padding: "8px 10px",
+                border: "1px solid #f2c2c2",
+                color: "crimson",
+                borderRadius: 8,
+                background: "white",
+                cursor: "pointer",
+              }}
+            >
+              Sì, elimina
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setConfirmDeleteId(null)}
+              style={{
+                padding: "8px 10px",
+                border: "1px solid #ddd",
+                borderRadius: 8,
+                background: "white",
+                cursor: "pointer",
+              }}
+            >
+              No
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <div style={{ marginTop: 16, overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
@@ -168,6 +229,7 @@ export default function WorkerLogsClient(props: {
               <th style={{ padding: 10, width: 160 }}></th>
             </tr>
           </thead>
+
           <tbody>
             {props.rows.length === 0 ? (
               <tr>
@@ -195,6 +257,7 @@ export default function WorkerLogsClient(props: {
                   <div>
                     <strong>{r.customerName}</strong>
                   </div>
+
                   {r.activityType === "PRODUCTION" ? (
                     <div style={{ color: "#666" }}>
                       {r.modelName ?? "-"} • {r.phaseName ?? "-"}
@@ -202,6 +265,7 @@ export default function WorkerLogsClient(props: {
                   ) : (
                     <div style={{ color: "#666" }}>Attività di pulizia</div>
                   )}
+
                   {r.notes ? (
                     <div style={{ marginTop: 6, color: "#444" }}>{r.notes}</div>
                   ) : null}
@@ -234,23 +298,21 @@ export default function WorkerLogsClient(props: {
                     Modifica
                   </Link>
 
-                  <form action={deleteAction} style={{ display: "inline" }}>
-                    <input type="hidden" name="id" value={String(r.id)} />
-                    <button
-                      type="submit"
-                      disabled={isDeleting}
-                      style={{
-                        padding: "8px 10px",
-                        border: "1px solid #f2c2c2",
-                        color: "crimson",
-                        borderRadius: 8,
-                        background: "white",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Elimina
-                    </button>
-                  </form>
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={() => setConfirmDeleteId(String(r.id))}
+                    style={{
+                      padding: "8px 10px",
+                      border: "1px solid #f2c2c2",
+                      color: "crimson",
+                      borderRadius: 8,
+                      background: "white",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Elimina
+                  </button>
                 </td>
               </tr>
             ))}
