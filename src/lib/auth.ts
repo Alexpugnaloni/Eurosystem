@@ -47,7 +47,6 @@ export async function createSession(userId: bigint) {
   return token;
 }
 
-
 export async function destroySession() {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
@@ -92,9 +91,30 @@ export async function getSessionUser() {
   return user;
 }
 
+/**
+ * Richiede login (qualsiasi ruolo)
+ */
 export async function requireUser() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  return user;
+}
+
+/**
+ * Richiede ruolo ADMIN
+ */
+export async function requireAdmin() {
+  const user = await requireUser();
+  if (user.role !== "ADMIN") redirect("/login");
+  return user;
+}
+
+/**
+ * Richiede ruolo WORKER
+ */
+export async function requireWorker() {
+  const user = await requireUser();
+  if (user.role !== "WORKER") redirect("/login");
   return user;
 }
 

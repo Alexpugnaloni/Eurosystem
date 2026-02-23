@@ -125,15 +125,15 @@ export const customerModels = pgTable(
   })
 );
 
-/**
- * PHASES (Fasi di produzione per azienda)
- */
+// PHASES (Fasi di produzione per azienda)
 export const phases = pgTable(
   "phases",
   {
     id: bigserial("id", { mode: "bigint" }).primaryKey(),
 
-    customerId: bigserial("customer_id", { mode: "bigint" }).notNull(),
+    customerId: bigint("customer_id", { mode: "bigint" })
+      .notNull()
+      .references(() => customers.id),
 
     name: varchar("name", { length: 120 }).notNull(),
     sortOrder: integer("sort_order").notNull().default(1),
@@ -153,14 +153,9 @@ export const phases = pgTable(
 
 /**
  * WORK_LOGS (Scheda lavoro compilata dai dipendenti)
- *
- * - workDate: data lavorazione (può essere passata/oggi)
- * - startTime / endTime: orari inseriti dall’operatore
- * - durationMinutes: calcolato dal server (end - start), NO mezzanotte
- * - activityType:
- *    - PRODUCTION: richiede modelId e phaseId, qtyOk/qtyKo hanno senso
- *    - CLEANING: imputabile a customerId (cliente o interna), modelId/phaseId possono essere null
+ * 
  */
+
 export const workLogs = pgTable(
   "work_logs",
   {
@@ -168,15 +163,21 @@ export const workLogs = pgTable(
 
     workDate: date("work_date").notNull(),
 
-    userId: bigserial("user_id", { mode: "bigint" }).notNull(),
-    customerId: bigserial("customer_id", { mode: "bigint" }).notNull(),
+    userId: bigint("user_id", { mode: "bigint" })
+      .notNull()
+      .references(() => users.id),
+
+    customerId: bigint("customer_id", { mode: "bigint" })
+      .notNull()
+      .references(() => customers.id),
+
     activityType: activityTypeEnum("activity_type").notNull(),
 
-    modelId: bigserial("model_id", { mode: "bigint" }),
-    phaseId: bigserial("phase_id", { mode: "bigint" }),
+    modelId: bigint("model_id", { mode: "bigint" }).references(() => models.id),
+    phaseId: bigint("phase_id", { mode: "bigint" }).references(() => phases.id),
 
-    startTime: time("start_time"), // HH:MM:SS
-    endTime: time("end_time"),
+    startTime: time("start_time").notNull(),
+    endTime: time("end_time").notNull(),
     durationMinutes: integer("duration_minutes").notNull(),
 
     qtyOk: integer("qty_ok").notNull().default(0),
@@ -205,11 +206,15 @@ export const deliveries = pgTable(
   "deliveries",
   {
     id: bigserial("id", { mode: "bigint" }).primaryKey(),
-
     deliveryDate: date("delivery_date").notNull(),
 
-    customerId: bigserial("customer_id", { mode: "bigint" }).notNull(),
-    modelId: bigserial("model_id", { mode: "bigint" }).notNull(),
+    customerId: bigint("customer_id", { mode: "bigint" })
+      .notNull()
+      .references(() => customers.id),
+
+    modelId: bigint("model_id", { mode: "bigint" })
+      .notNull()
+      .references(() => models.id),
 
     quantity: integer("quantity").notNull(),
     notes: text("notes"),
@@ -230,8 +235,10 @@ export const sessions = pgTable(
   "sessions",
   {
     id: bigserial("id", { mode: "bigint" }).primaryKey(),
-    userId: bigserial("user_id", { mode: "bigint" }).notNull(),
-    token: varchar("token", { length: 128 }).notNull(), // token random
+    userId: bigint("user_id", { mode: "bigint" })
+      .notNull()
+      .references(() => users.id),
+    token: varchar("token", { length: 128 }).notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
