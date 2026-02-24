@@ -57,6 +57,13 @@
       "when": 1771845219848,
       "tag": "0007_add-fk-constraints",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1771929924352,
+      "tag": "0008_fix-worklogs-cleaning-nullable",
+      "breakpoints": true
     }
   ]
 }

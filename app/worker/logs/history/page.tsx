@@ -1,12 +1,11 @@
-// app/worker/logs/page.tsx
+// app/worker/logs/history/page.tsx
 import { db } from "@/db";
 import { customers, models, phases, workLogs } from "@/db/schema";
 import { requireWorker } from "@/lib/auth";
 import { and, asc, desc, eq } from "drizzle-orm";
-import WorkerLogsClient from "./WorkerLogsClient";
+import WorkerLogsClient from "../WorkerLogsClient";
 
 type SearchParams = {
-  // date viene ignorata in questa pagina (vista "oggi")
   date?: string; // YYYY-MM-DD
   customerId?: string;
   type?: "PRODUCTION" | "CLEANING";
@@ -20,7 +19,7 @@ function todayISO() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-export default async function WorkerLogsPage({
+export default async function WorkerLogsHistoryPage({
   searchParams,
 }: {
   searchParams: Promise<SearchParams>;
@@ -28,8 +27,8 @@ export default async function WorkerLogsPage({
   const user = await requireWorker();
   const sp = await searchParams;
 
-  // ✅ Vista "oggi": la data è SEMPRE oggi (ignoro sp.date)
-  const workDate = todayISO();
+  // ✅ Storico: usa la data in query o default oggi
+  const workDate = sp.date ?? todayISO();
   const customerId = sp.customerId ? BigInt(sp.customerId) : null;
   const type = sp.type ?? null;
 
@@ -68,7 +67,7 @@ export default async function WorkerLogsPage({
 
   return (
     <WorkerLogsClient
-      mode="today"
+      mode="history"
       customers={activeCustomers}
       initialDate={workDate}
       initialCustomerId={sp.customerId ?? ""}

@@ -48,11 +48,23 @@ export default async function EditWorkLogPage({
     .orderBy(asc(phases.customerId), asc(phases.sortOrder), asc(phases.name));
 
   return (
-    <EditWorkLogForm
-      log={log}
-      customers={activeCustomers}
-      models={activeModels}
-      phases={activePhases}
-    />
-  );
+  <EditWorkLogForm
+    id={String(log.id)}
+    initial={{
+      workDate: log.workDate,
+      activityType: log.activityType,
+      customerId: String(log.customerId),
+      modelId: log.modelId ? String(log.modelId) : "",
+      phaseId: log.phaseId ? String(log.phaseId) : "",
+      startTime: (log.startTime ?? "").slice(0, 5), // HH:MM
+      endTime: (log.endTime ?? "").slice(0, 5),     // HH:MM
+      qtyOk: String(log.qtyOk ?? 0),
+      qtyKo: String(log.qtyKo ?? 0),
+      notes: log.notes ?? "",
+    }}
+    customers={activeCustomers}
+    models={activeModels}
+    phases={activePhases}
+  />
+);
 }

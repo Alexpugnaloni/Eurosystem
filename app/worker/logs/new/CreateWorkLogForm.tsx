@@ -10,29 +10,98 @@ type Phase = { id: bigint; customerId: bigint; name: string; sortOrder: number; 
 
 type ActivityType = "PRODUCTION" | "CLEANING";
 
+const ui = {
+  page: { padding: 24, display: "flex", justifyContent: "center" as const },
+  card: {
+    width: "100%",
+    maxWidth: 860,
+    background: "white",
+    border: "1px solid #eee",
+    borderRadius: 16,
+    padding: 20,
+    boxShadow: "0 1px 0 rgba(0,0,0,0.02)",
+  },
+  headerRow: { display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" as const },
+  titleWrap: { textAlign: "center" as const, width: "100%" },
+  h1: { margin: 0, fontSize: 28, fontWeight: 700 },
+  subtitle: { marginTop: 8, color: "#666", fontSize: 15, marginBottom: 0 },
+  topActions: { display: "flex", gap: 10, justifyContent: "center" as const, flexWrap: "wrap" as const },
+  btn: {
+    padding: "10px 12px",
+    border: "1px solid #ddd",
+    borderRadius: 10,
+    background: "white",
+    textDecoration: "none",
+    display: "inline-block",
+  },
+  btnPrimary: {
+    padding: "10px 12px",
+    border: "1px solid #111",
+    borderRadius: 10,
+    background: "#111",
+    color: "white",
+    cursor: "pointer",
+  },
+  btnSecondary: {
+    padding: "10px 12px",
+    border: "1px solid #ddd",
+    borderRadius: 10,
+    background: "white",
+    cursor: "pointer",
+  },
+  form: { marginTop: 18 },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 14,
+  },
+  gridFull: { gridColumn: "1 / -1" },
+  label: { display: "block" },
+  labelText: { fontSize: 12, color: "#666", marginBottom: 6 },
+  field: {
+    width: "100%",
+    height: 42,
+    padding: "0 12px",
+    border: "1px solid #ddd",
+    borderRadius: 10,
+    background: "white",
+    outline: "none",
+  },
+  textarea: {
+    width: "100%",
+    padding: 12,
+    border: "1px solid #ddd",
+    borderRadius: 10,
+    background: "white",
+    outline: "none",
+    minHeight: 110,
+    resize: "vertical" as const,
+  },
+  footer: { marginTop: 16, display: "flex", gap: 12, justifyContent: "center" as const, flexWrap: "wrap" as const },
+  hint: { marginTop: 12, color: "#888", fontSize: 12, textAlign: "center" as const },
+  err: { color: "crimson", marginTop: 12, textAlign: "center" as const },
+};
+
 export default function CreateWorkLogForm(props: {
   customers: Customer[];
   models: Model[];
   phases: Phase[];
   defaultDate: string;
 }) {
-  const [serverState, action, pending] = useActionState<CreateWorkLogState, FormData>(
-    createWorkLogAction,
-    {
-      values: {
-        workDate: props.defaultDate,
-        activityType: "PRODUCTION",
-        customerId: "",
-        modelId: "",
-        phaseId: "",
-        startTime: "",
-        endTime: "",
-        qtyOk: "0",
-        qtyKo: "0",
-        notes: "",
-      },
-    }
-  );
+  const [serverState, action, pending] = useActionState<CreateWorkLogState, FormData>(createWorkLogAction, {
+    values: {
+      workDate: props.defaultDate,
+      activityType: "PRODUCTION",
+      customerId: "",
+      modelId: "",
+      phaseId: "",
+      startTime: "",
+      endTime: "",
+      qtyOk: "0",
+      qtyKo: "0",
+      notes: "",
+    },
+  });
 
   // ✅ Controlled fields (non si resettano)
   const [activityType, setActivityType] = useState<ActivityType>("PRODUCTION");
@@ -46,11 +115,9 @@ export default function CreateWorkLogForm(props: {
   const [endTime, setEndTime] = useState("");
   const [notes, setNotes] = useState("");
 
-  // ✅ Errori lato client: evitano submit “vuoti” (quindi niente reset)
   const [clientError, setClientError] = useState<string>("");
 
   const isProduction = activityType === "PRODUCTION";
-
   const selectedCustomerId = customerId ? BigInt(customerId) : null;
 
   const filteredModels = useMemo(() => {
@@ -65,7 +132,6 @@ export default function CreateWorkLogForm(props: {
 
   function onChangeCustomer(next: string) {
     setCustomerId(next);
-    // coerente: cambi azienda => reset model/fase
     setModelId("");
     setPhaseId("");
     setClientError("");
@@ -75,7 +141,6 @@ export default function CreateWorkLogForm(props: {
     setActivityType(next);
     setClientError("");
 
-    // ✅ come vuoi tu: se passo a CLEANING resetto i campi produzione
     if (next === "CLEANING") {
       setModelId("");
       setPhaseId("");
@@ -91,305 +156,253 @@ export default function CreateWorkLogForm(props: {
   }
 
   function validateClient(): string | null {
-  // 1) Tipo attività (sempre presente, ma lasciamo la guardia)
-  if (activityType !== "PRODUCTION" && activityType !== "CLEANING") {
-    return "Tipo attività non valido.";
-  }
+    if (activityType !== "PRODUCTION" && activityType !== "CLEANING") return "Tipo attività non valido.";
 
-  // 2) Data
-  if (!workDate) {
-    return "Seleziona la data.";
-  }
+    if (!workDate) return "Seleziona la data.";
 
-  // ✅ No date future (consenti passato e oggi)
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const todayISO = `${yyyy}-${mm}-${dd}`;
-  if (workDate > todayISO) {
-    return "La data non può essere futura.";
-  }
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const todayISO = `${yyyy}-${mm}-${dd}`;
+    if (workDate > todayISO) return "La data non può essere futura.";
 
-  // 3) Azienda
-  if (!customerId) {
-    return "Seleziona l'azienda.";
-  }
+    if (!customerId) return "Seleziona l'azienda.";
 
-  // 4) Produzione: modello -> fase -> quantità
-  if (activityType === "PRODUCTION") {
-    if (!modelId) {
-      return "Seleziona il modello.";
-    }
-    if (!phaseId) {
-      return "Seleziona la fase.";
+    if (activityType === "PRODUCTION") {
+      if (!modelId) return "Seleziona il modello.";
+      if (!phaseId) return "Seleziona la fase.";
+
+      const ok = parseNonNegInt(qtyOk);
+      const ko = parseNonNegInt(qtyKo);
+      if (ok === 0 && ko === 0) return "Inserisci almeno 1 pezzo (OK o KO).";
     }
 
-    const ok = parseNonNegInt(qtyOk);
-    const ko = parseNonNegInt(qtyKo);
-    if (ok === 0 && ko === 0) {
-      return "Inserisci almeno 1 pezzo (OK o KO).";
-    }
-  }
+    if (!startTime) return "Seleziona l'ora di inizio.";
+    if (!endTime) return "Seleziona l'ora di fine.";
+    if (startTime >= endTime) return "L'orario di fine deve essere dopo l'orario di inizio.";
 
-  // 5) Orari (in ordine: inizio poi fine)
-  if (!startTime) {
-    return "Seleziona l'ora di inizio.";
+    return null;
   }
-  if (!endTime) {
-    return "Seleziona l'ora di fine.";
-  }
-  if (startTime >= endTime) {
-    return "L'orario di fine deve essere dopo l'orario di inizio.";
-  }
-
-  // 6) Note: opzionale, nessuna validazione
-
-  return null;
-}
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     setClientError("");
     const err = validateClient();
     if (err) {
-      e.preventDefault(); // ✅ blocca la server action => niente reset
+      e.preventDefault();
       setClientError(err);
-      return;
     }
-    // ok: lascia partire la server action
   }
 
   return (
-    <div style={{ padding: 16, maxWidth: 820 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-        <div>
-          <h1 style={{ margin: 0 }}>Nuova attività</h1>
-          <p style={{ marginTop: 6, color: "#666" }}>
-            Inserisci produzione o pulizie. Nessun overlap permesso.
-          </p>
+    <div style={ui.page}>
+      <div style={ui.card}>
+        <div style={ui.titleWrap}>
+          <h1 style={ui.h1}>Nuova attività</h1>
+          <p style={ui.subtitle}>Inserisci produzione o pulizie. Nessun overlap permesso.</p>
         </div>
 
-        <Link
-          href="/worker/logs"
-          style={{
-            alignSelf: "flex-start",
-            padding: "10px 12px",
-            border: "1px solid #ddd",
-            borderRadius: 8,
-            textDecoration: "none",
-          }}
-        >
-          ← Indietro
-        </Link>
+    
+
+        {clientError ? <div style={ui.err}>{clientError}</div> : null}
+        {serverState.error ? <div style={ui.err}>{serverState.error}</div> : null}
+
+        <form action={action} onSubmit={handleSubmit} style={ui.form}>
+          <div style={ui.grid}>
+            <label style={ui.label}>
+              <div style={ui.labelText}>Tipo attività</div>
+              <select
+                name="activityType"
+                value={activityType}
+                onChange={(e) => onChangeActivityType(e.target.value as ActivityType)}
+                style={ui.field}
+              >
+                <option value="PRODUCTION">Produzione</option>
+                <option value="CLEANING">Pulizie</option>
+              </select>
+            </label>
+
+            <label style={ui.label}>
+              <div style={ui.labelText}>Data</div>
+              <input
+                type="date"
+                name="workDate"
+                value={workDate}
+                onChange={(e) => {
+                  setWorkDate(e.target.value);
+                  setClientError("");
+                }}
+                style={ui.field}
+              />
+            </label>
+
+            <label style={{ ...ui.label, ...ui.gridFull }}>
+              <div style={ui.labelText}>Azienda</div>
+              <select
+                name="customerId"
+                value={customerId}
+                onChange={(e) => onChangeCustomer(e.target.value)}
+                style={ui.field}
+              >
+                <option value="">Seleziona…</option>
+                {props.customers.map((c) => (
+                  <option key={String(c.id)} value={String(c.id)}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {isProduction ? (
+              <>
+                <label style={ui.label}>
+                  <div style={ui.labelText}>Modello</div>
+                  <select
+                    name="modelId"
+                    value={modelId}
+                    onChange={(e) => {
+                      setModelId(e.target.value);
+                      setClientError("");
+                    }}
+                    style={ui.field}
+                    disabled={!customerId}
+                  >
+                    <option value="">{customerId ? "Seleziona…" : "Seleziona prima un'azienda"}</option>
+                    {filteredModels.map((m) => (
+                      <option key={String(m.id)} value={String(m.id)}>
+                        {m.name}
+                        {m.code ? ` (${m.code})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label style={ui.label}>
+                  <div style={ui.labelText}>Fase</div>
+                  <select
+                    name="phaseId"
+                    value={phaseId}
+                    onChange={(e) => {
+                      setPhaseId(e.target.value);
+                      setClientError("");
+                    }}
+                    style={ui.field}
+                    disabled={!customerId}
+                  >
+                    <option value="">{customerId ? "Seleziona…" : "Seleziona prima un'azienda"}</option>
+                    {filteredPhases.map((p) => (
+                      <option key={String(p.id)} value={String(p.id)}>
+                        {p.sortOrder}. {p.name}
+                        {p.isFinal ? " (finale)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label style={ui.label}>
+                  <div style={ui.labelText}>Quantità OK</div>
+                  <input
+                    type="number"
+                    name="qtyOk"
+                    min={0}
+                    value={qtyOk}
+                    onChange={(e) => {
+                      setQtyOk(e.target.value);
+                      setClientError("");
+                    }}
+                    style={ui.field}
+                  />
+                </label>
+
+                <label style={ui.label}>
+                  <div style={ui.labelText}>Quantità KO</div>
+                  <input
+                    type="number"
+                    name="qtyKo"
+                    min={0}
+                    value={qtyKo}
+                    onChange={(e) => {
+                      setQtyKo(e.target.value);
+                      setClientError("");
+                    }}
+                    style={ui.field}
+                  />
+                </label>
+              </>
+            ) : (
+              <>
+                <input type="hidden" name="modelId" value="" />
+                <input type="hidden" name="phaseId" value="" />
+                <input type="hidden" name="qtyOk" value="0" />
+                <input type="hidden" name="qtyKo" value="0" />
+              </>
+            )}
+
+            <label style={ui.label}>
+              <div style={ui.labelText}>Ora inizio</div>
+              <input
+                type="time"
+                name="startTime"
+                value={startTime}
+                onChange={(e) => {
+                  setStartTime(e.target.value);
+                  setClientError("");
+                }}
+                style={ui.field}
+              />
+            </label>
+
+            <label style={ui.label}>
+              <div style={ui.labelText}>Ora fine</div>
+              <input
+                type="time"
+                name="endTime"
+                value={endTime}
+                onChange={(e) => {
+                  setEndTime(e.target.value);
+                  setClientError("");
+                }}
+                style={ui.field}
+              />
+            </label>
+
+            <label style={{ ...ui.label, ...ui.gridFull }}>
+              <div style={ui.labelText}>Note (opzionale)</div>
+              <textarea
+                name="notes"
+                value={notes}
+                onChange={(e) => {
+                  setNotes(e.target.value);
+                  setClientError("");
+                }}
+                rows={4}
+                style={ui.textarea}
+              />
+            </label>
+          </div>
+
+          <div style={ui.footer}>
+            <button type="submit" disabled={pending} style={ui.btnPrimary}>
+              Salva
+            </button>
+
+            <Link href="/worker/logs" style={ui.btnSecondary}>
+              Annulla
+            </Link>
+          </div>
+        </form>
+
+        <p style={ui.hint}>Suggerimento: se cambi Azienda, potresti dover riselezionare Modello/Fase.</p>
+
+        {/* responsive: 1 col su schermi piccoli */}
+        <style jsx>{`
+          @media (max-width: 720px) {
+            form > div {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}</style>
       </div>
-
-      {/* ✅ Errore client (prima) */}
-      {clientError ? <p style={{ color: "crimson", marginTop: 12 }}>{clientError}</p> : null}
-
-      {/* ✅ Errore server (overlap, check DB, ecc.) */}
-      {serverState.error ? (
-        <p style={{ color: "crimson", marginTop: clientError ? 8 : 12 }}>{serverState.error}</p>
-      ) : null}
-
-      <form action={action} onSubmit={handleSubmit} style={{ marginTop: 16 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: 12 }}>
-          <label>
-            <div style={{ fontSize: 12, color: "#666" }}>Tipo attività</div>
-            <select
-              name="activityType"
-              value={activityType}
-              onChange={(e) => onChangeActivityType(e.target.value as ActivityType)}
-              style={{ width: "100%", padding: 8 }}
-            >
-              <option value="PRODUCTION">Produzione</option>
-              <option value="CLEANING">Pulizie</option>
-            </select>
-          </label>
-
-          <label>
-            <div style={{ fontSize: 12, color: "#666" }}>Data</div>
-            <input
-              type="date"
-              name="workDate"
-              value={workDate}
-              onChange={(e) => {
-                setWorkDate(e.target.value);
-                setClientError("");
-              }}
-              style={{ width: "100%", padding: 8 }}
-            />
-          </label>
-
-          <label style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontSize: 12, color: "#666" }}>Azienda</div>
-            <select
-              name="customerId"
-              value={customerId}
-              onChange={(e) => onChangeCustomer(e.target.value)}
-              style={{ width: "100%", padding: 8 }}
-            >
-              <option value="">Seleziona…</option>
-              {props.customers.map((c) => (
-                <option key={String(c.id)} value={String(c.id)}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {isProduction ? (
-            <>
-              <label>
-                <div style={{ fontSize: 12, color: "#666" }}>Modello</div>
-                <select
-                  name="modelId"
-                  value={modelId}
-                  onChange={(e) => {
-                    setModelId(e.target.value);
-                    setClientError("");
-                  }}
-                  style={{ width: "100%", padding: 8 }}
-                  disabled={!customerId}
-                >
-                  <option value="">{customerId ? "Seleziona…" : "Seleziona prima un'azienda"}</option>
-                  {filteredModels.map((m) => (
-                    <option key={String(m.id)} value={String(m.id)}>
-                      {m.name}
-                      {m.code ? ` (${m.code})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                <div style={{ fontSize: 12, color: "#666" }}>Fase</div>
-                <select
-                  name="phaseId"
-                  value={phaseId}
-                  onChange={(e) => {
-                    setPhaseId(e.target.value);
-                    setClientError("");
-                  }}
-                  style={{ width: "100%", padding: 8 }}
-                  disabled={!customerId}
-                >
-                  <option value="">{customerId ? "Seleziona…" : "Seleziona prima un'azienda"}</option>
-                  {filteredPhases.map((p) => (
-                    <option key={String(p.id)} value={String(p.id)}>
-                      {p.sortOrder}. {p.name}
-                      {p.isFinal ? " (finale)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                <div style={{ fontSize: 12, color: "#666" }}>Quantità OK</div>
-                <input
-                  type="number"
-                  name="qtyOk"
-                  min={0}
-                  value={qtyOk}
-                  onChange={(e) => {
-                    setQtyOk(e.target.value);
-                    setClientError("");
-                  }}
-                  style={{ width: "100%", padding: 8 }}
-                />
-              </label>
-
-              <label>
-                <div style={{ fontSize: 12, color: "#666" }}>Quantità KO</div>
-                <input
-                  type="number"
-                  name="qtyKo"
-                  min={0}
-                  value={qtyKo}
-                  onChange={(e) => {
-                    setQtyKo(e.target.value);
-                    setClientError("");
-                  }}
-                  style={{ width: "100%", padding: 8 }}
-                />
-              </label>
-            </>
-          ) : (
-            <>
-              {/* CLEANING: niente modello/fase/quantità */}
-              <input type="hidden" name="modelId" value="" />
-              <input type="hidden" name="phaseId" value="" />
-              <input type="hidden" name="qtyOk" value="0" />
-              <input type="hidden" name="qtyKo" value="0" />
-            </>
-          )}
-
-          <label>
-            <div style={{ fontSize: 12, color: "#666" }}>Ora inizio</div>
-            <input
-              type="time"
-              name="startTime"
-              value={startTime}
-              onChange={(e) => {
-                setStartTime(e.target.value);
-                setClientError("");
-              }}
-              style={{ width: "100%", padding: 8 }}
-            />
-          </label>
-
-          <label>
-            <div style={{ fontSize: 12, color: "#666" }}>Ora fine</div>
-            <input
-              type="time"
-              name="endTime"
-              value={endTime}
-              onChange={(e) => {
-                setEndTime(e.target.value);
-                setClientError("");
-              }}
-              style={{ width: "100%", padding: 8 }}
-            />
-          </label>
-
-          <label style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontSize: 12, color: "#666" }}>Note (opzionale)</div>
-            <textarea
-              name="notes"
-              value={notes}
-              onChange={(e) => {
-                setNotes(e.target.value);
-                setClientError("");
-              }}
-              rows={4}
-              style={{ width: "100%", padding: 8 }}
-            />
-          </label>
-        </div>
-
-        <div style={{ marginTop: 16, display: "flex", gap: 12 }}>
-          <button
-            type="submit"
-            disabled={pending}
-            style={{
-              padding: "10px 12px",
-              border: "1px solid #ddd",
-              borderRadius: 8,
-              background: "white",
-              cursor: "pointer",
-            }}
-          >
-            Salva
-          </button>
-
-          <Link href="/worker/logs" style={{ padding: "10px 12px", textDecoration: "none" }}>
-            Annulla
-          </Link>
-        </div>
-      </form>
-
-      <p style={{ marginTop: 12, color: "#888", fontSize: 12 }}>
-        Suggerimento: se cambi Azienda, potresti dover riselezionare Modello/Fase.
-      </p>
     </div>
   );
 }
