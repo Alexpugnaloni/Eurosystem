@@ -1,3 +1,4 @@
+// app/admin/AdminNav.tsx
 "use client";
 
 import Link from "next/link";
@@ -8,6 +9,10 @@ type Item = { href: string; label: string };
 const items: Item[] = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/users", label: "Utenti" },
+
+  // ✅ NEW: schede lavoro dipendenti
+  { href: "/admin/worklogs", label: "Schede dipendenti" },
+
   { href: "/admin/customers", label: "Aziende" },
   { href: "/admin/models", label: "Modelli" },
   { href: "/admin/phases", label: "Fasi" },
