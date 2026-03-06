@@ -1,8 +1,14 @@
 // app/admin/page.tsx
+import Link from "next/link";
 import DashboardDonut from "./DashboardDonut";
 import { db } from "@/db";
 import { customers, deliveries, phases, workLogs } from "@/db/schema";
 import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 function isoToday() {
   const d = new Date();
@@ -122,110 +128,99 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-black">Dashboard</h1>
-        <p className="text-sm text-gray-600">
+      {/* Header */}
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <p className="text-sm text-muted-foreground">
           Panoramica mese corrente e disponibilità consegne.
         </p>
       </div>
 
-      {/* ✅ DONUT: percentuali ore mese corrente */}
+      {/* DONUT (lo lasciamo com’è, poi lo convertiamo) */}
       <DashboardDonut
         title="Distribuzione ore per azienda (mese corrente)"
         subtitle={`Periodo: ${isoToIT(mtd.from)} → ${isoToIT(mtd.to)} (month-to-date).`}
         slices={donutSlices}
       />
 
-      {/* ✅ Pronti per consegna per azienda (solo contatore) */}
-      <section className="rounded-lg border bg-white p-5 shadow-sm">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-black">Prodotti pronti per consegna (per azienda)</h2>
-          <p className="text-sm text-gray-600">
-            Mostra solo il totale pezzi disponibili per azienda. Il dettaglio per modello è in Report → Consegne.
-          </p>
-        </div>
+      {/* Prodotti pronti per consegna */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Prodotti pronti per consegna</CardTitle>
+          <CardDescription>
+            Totale pezzi disponibili per azienda. Il dettaglio per modello è in Report → Consegne.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Azienda</TableHead>
+                  <TableHead className="text-right">Pronti (pezzi)</TableHead>
+                </TableRow>
+              </TableHeader>
 
-        <div className="overflow-hidden rounded-md border">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left">
-              <tr className="text-gray-700">
-                <th className="px-4 py-3">Azienda</th>
-                <th className="px-4 py-3">Pronti (pezzi)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {availableByCustomer.length === 0 ? (
-                <tr>
-                  <td className="px-4 py-4 text-gray-600" colSpan={2}>
-                    Nessun prodotto pronto per consegna (in base ai dati attuali).
-                  </td>
-                </tr>
-              ) : (
-                availableByCustomer.map((r) => (
-                  <tr key={String(r.customerId)} className="border-t">
-                    <td className="px-4 py-3 text-black">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{r.customerName}</span>
-                        {r.isInternal ? (
-                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                            Interna
-                          </span>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-black font-semibold">{r.availableQty}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              <TableBody>
+                {availableByCustomer.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={2} className="text-muted-foreground">
+                      Nessun prodotto pronto per consegna (in base ai dati attuali).
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  availableByCustomer.map((r) => (
+                    <TableRow key={String(r.customerId)}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{r.customerName}</span>
+                          {r.isInternal ? <Badge variant="secondary">Interna</Badge> : null}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">{r.availableQty}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Link utili (se vuoi li lasciamo, oppure li togliamo) */}
-      <section className="rounded-lg border bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-black">Azioni rapide</h2>
-        <p className="text-sm text-gray-600">Vai direttamente alle sezioni operative.</p>
+      {/* Azioni rapide */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Azioni rapide</CardTitle>
+          <CardDescription>Vai direttamente alle sezioni operative.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Button asChild variant="outline" className="justify-start">
+              <Link href="/admin/reports/ore">Report → Ore</Link>
+            </Button>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <a
-            href="/admin/reports/ore"
-            className="rounded-md border px-4 py-3 text-sm text-black hover:bg-gray-100"
-          >
-            Report → Ore
-          </a>
-          <a
-            href="/admin/reports/produzione"
-            className="rounded-md border px-4 py-3 text-sm text-black hover:bg-gray-100"
-          >
-            Report → Produzione
-          </a>
-          <a
-            href="/admin/reports/consegne"
-            className="rounded-md border px-4 py-3 text-sm text-black hover:bg-gray-100"
-          >
-            Report → Consegne
-          </a>
-          <a
-            href="/admin/customers"
-            className="rounded-md border px-4 py-3 text-sm text-black hover:bg-gray-100"
-          >
-            Gestisci Aziende
-          </a>
-          <a
-            href="/admin/models"
-            className="rounded-md border px-4 py-3 text-sm text-black hover:bg-gray-100"
-          >
-            Gestisci Modelli
-          </a>
-          <a
-            href="/admin/phases"
-            className="rounded-md border px-4 py-3 text-sm text-black hover:bg-gray-100"
-          >
-            Gestisci Fasi
-          </a>
-        </div>
-      </section>
+            <Button asChild variant="outline" className="justify-start">
+              <Link href="/admin/reports/produzione">Report → Produzione</Link>
+            </Button>
+
+            <Button asChild variant="outline" className="justify-start">
+              <Link href="/admin/reports/consegne">Report → Consegne</Link>
+            </Button>
+
+            <Button asChild variant="outline" className="justify-start">
+              <Link href="/admin/customers">Gestisci Aziende</Link>
+            </Button>
+
+            <Button asChild variant="outline" className="justify-start">
+              <Link href="/admin/models">Gestisci Modelli</Link>
+            </Button>
+
+            <Button asChild variant="outline" className="justify-start">
+              <Link href="/admin/phases">Gestisci Fasi</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

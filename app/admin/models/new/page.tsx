@@ -1,10 +1,12 @@
 // app/admin/models/new/page.tsx
-
 import { db } from "@/db";
 import { customers } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 import Link from "next/link";
 import CreateModelForm from "./CreateModelForm";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default async function NewModelPage() {
   const rows = await db
@@ -25,25 +27,27 @@ export default async function NewModelPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-black">Nuovo Modello</h1>
-          <p className="text-sm text-gray-600">
+          <h1 className="text-2xl font-semibold tracking-tight">Nuovo modello</h1>
+          <p className="text-sm text-muted-foreground">
             Crea un prodotto/modello e associalo a un’azienda.
           </p>
         </div>
 
-        <Link
-          href="/admin/models"
-          className="rounded-md border px-3 py-2 text-sm text-black hover:bg-gray-100"
-        >
-          ← Indietro
-        </Link>
+        <Button asChild variant="outline">
+          <Link href="/admin/models">Torna alla lista</Link>
+        </Button>
       </div>
 
-      <div className="rounded-md border bg-white p-6">
-        <CreateModelForm customers={activeCustomers} />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Dati modello</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CreateModelForm customers={activeCustomers} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

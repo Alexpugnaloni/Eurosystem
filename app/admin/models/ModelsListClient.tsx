@@ -4,6 +4,13 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 type ModelItem = {
   id: string;
   name: string;
@@ -32,105 +39,107 @@ export default function ModelsListClient({ groups }: { groups: Group[] }) {
       .map((g) => ({
         ...g,
         items: g.items.filter((m) => {
-            const nameMatch = m.name.toLowerCase().includes(normalizedQ);
-            const codeMatch = (m.code ?? "").toLowerCase().includes(normalizedQ);
-            return nameMatch || codeMatch;
+          const nameMatch = m.name.toLowerCase().includes(normalizedQ);
+          const codeMatch = (m.code ?? "").toLowerCase().includes(normalizedQ);
+          return nameMatch || codeMatch;
         }),
       }))
       .filter((g) => g.items.length > 0);
   }, [groups, normalizedQ]);
 
+  const totalResults = filteredGroups.reduce((acc, g) => acc + g.items.length, 0);
+
   return (
     <div className="space-y-4">
-      <div className="rounded-md border bg-white p-4">
-        <label className="block text-sm font-medium text-black">Cerca modello</label>
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Cerca per nome o codice (es. PA-001)..."
-          className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-black"
-        />
-        {normalizedQ && (
-          <p className="mt-2 text-sm text-gray-600">
-            Risultati: {filteredGroups.reduce((acc, g) => acc + g.items.length, 0)}
-          </p>
-        )}
-      </div>
+      {/* Search */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Cerca modello</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="space-y-2">
+            <Label htmlFor="q">Nome o codice</Label>
+            <Input
+              id="q"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Cerca per nome o codice (es. PA-001)..."
+            />
+          </div>
 
+          {normalizedQ ? (
+            <p className="text-sm text-muted-foreground">Risultati: {totalResults}</p>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      {/* Groups */}
       {filteredGroups.length === 0 ? (
-        <div className="rounded-md border bg-white p-6 text-sm text-gray-600">
-          Nessun modello trovato.
-        </div>
+        <Card>
+          <CardContent className="py-6 text-sm text-muted-foreground">
+            Nessun modello trovato.
+          </CardContent>
+        </Card>
       ) : (
         filteredGroups.map((g) => {
-          // ✅ se stai cercando, apriamo automaticamente i gruppi che hanno match
+          // se stai cercando, apriamo automaticamente i gruppi che hanno match
           const openByDefault = !!normalizedQ;
 
           return (
             <details
               key={g.customer.id}
-              className="overflow-hidden rounded-md border bg-white"
+              className="overflow-hidden rounded-xl border bg-card"
               open={openByDefault}
             >
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 border-b bg-gray-50 px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <div className="text-base font-semibold text-black">{g.customer.name}</div>
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 border-b bg-muted/40 px-4 py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="text-sm font-semibold">{g.customer.name}</div>
 
-                  {g.customer.isInternal && (
-                    <span className="rounded-full bg-black px-2 py-0.5 text-xs text-white">
-                      Interna
-                    </span>
-                  )}
+                  {g.customer.isInternal ? <Badge variant="secondary">Interna</Badge> : null}
 
-                  <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-black">
-                    {countLabel(g.items.length)}
-                  </span>
+                  <Badge variant="outline">{countLabel(g.items.length)}</Badge>
                 </div>
 
-                <span className="text-sm text-gray-600">Apri/chiudi</span>
+                <span className="text-xs text-muted-foreground">Apri/chiudi</span>
               </summary>
 
               <div className="overflow-x-auto">
-                <table className="min-w-full table-fixed text-sm">
-                  <thead className="bg-white text-left text-black">
-                    <tr>
-                      <th className="w-[50%] px-4 py-2">Nome</th>
-                      <th className="w-[25%] px-4 py-2">Codice</th>
-                      <th className="w-[15%] px-4 py-2">Attivo</th>
-                      <th className="w-[10%] px-4 py-2 text-right">Azioni</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50%]">Nome</TableHead>
+                      <TableHead className="w-[25%]">Codice</TableHead>
+                      <TableHead className="w-[15%]">Attivo</TableHead>
+                      <TableHead className="w-[10%] text-right">Azioni</TableHead>
+                    </TableRow>
+                  </TableHeader>
+
+                  <TableBody>
                     {g.items.map((m) => (
-                      <tr key={m.id} className="border-t">
-                        <td className="px-4 py-2 text-black">
-                          <span className={!m.isActive ? "text-gray-400" : ""}>
-                            {m.name}
-                          </span>
-                        </td>
+                      <TableRow key={m.id}>
+                        <TableCell className={!m.isActive ? "text-muted-foreground" : ""}>
+                          {m.name}
+                        </TableCell>
 
-                        <td className="px-4 py-2 text-black">
-                          <span className={!m.isActive ? "text-gray-400" : ""}>
-                            {m.code ?? "-"}
-                          </span>
-                        </td>
+                        <TableCell className={!m.isActive ? "text-muted-foreground" : ""}>
+                          {m.code ?? "-"}
+                        </TableCell>
 
-                        <td className="px-4 py-2 text-black">
-                          {m.isActive ? "Sì" : <span className="text-gray-500">No</span>}
-                        </td>
+                        <TableCell>
+                          <Badge variant={m.isActive ? "secondary" : "outline"}>
+                            {m.isActive ? "Sì" : "No"}
+                          </Badge>
+                        </TableCell>
 
-                        <td className="px-4 py-2 text-right">
-                          <Link
-                            href={`/admin/models/${m.id}/edit`}
-                            className="text-blue-600 hover:underline"
-                          >
-                            Modifica
-                          </Link>
-                        </td>
-                      </tr>
+                        <TableCell className="text-right">
+                          <Button asChild variant="ghost" size="sm">
+                            <Link href={`/admin/models/${m.id}/edit`}>Modifica</Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </details>
           );

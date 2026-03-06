@@ -1,8 +1,11 @@
-// app/admin/reports/produzione/page.tsx
 import { db } from "@/db";
 import { customers, models, workLogs } from "@/db/schema";
 import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
 import { fmtMinutes, isoToday } from "../_lib";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 type SearchParams = {
   from?: string;
@@ -33,6 +36,7 @@ export default async function ReportsProduzionePage({
     gte(workLogs.workDate, from),
     lte(workLogs.workDate, to),
   ];
+
   if (customerId) whereParts.push(eq(workLogs.customerId, customerId));
 
   const rows = await db
@@ -64,101 +68,163 @@ export default async function ReportsProduzionePage({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border bg-white p-5">
-        <h2 className="text-lg font-semibold text-black">Top modelli lavorati</h2>
-        <p className="text-sm text-gray-600">
-          Produzione aggregata per azienda e modello (range selezionato).
+
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Report produzione
+        </h1>
+
+        <p className="text-sm text-muted-foreground">
+          Produzione aggregata per azienda e modello.
         </p>
+      </div>
 
-        <form method="get" className="mt-4 grid gap-3 md:grid-cols-4">
-          <div className="flex flex-col gap-1">
-            <label className="text-sm text-black">Da</label>
-            <input
-              type="date"
-              name="from"
-              defaultValue={from}
-              className="rounded-md border px-3 py-2 text-sm text-black"
-              required
-            />
-          </div>
+      {/* Filtri */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            Filtri
+          </CardTitle>
+        </CardHeader>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm text-black">A</label>
-            <input
-              type="date"
-              name="to"
-              defaultValue={to}
-              className="rounded-md border px-3 py-2 text-sm text-black"
-              required
-            />
-          </div>
+        <CardContent>
+          <form method="get" className="grid gap-4 md:grid-cols-4">
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm text-black">Azienda (opzionale)</label>
-            <select
-              name="customerId"
-              defaultValue={sp.customerId ?? ""}
-              className="rounded-md border px-3 py-2 text-sm text-black"
-            >
-              <option value="">Tutte</option>
-              {activeCustomers.map((c) => (
-                <option key={String(c.id)} value={String(c.id)}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm">Da</label>
 
-          <div className="flex items-end gap-2">
-            <button className="rounded-md bg-black px-4 py-2 text-sm text-white">
-              Applica
-            </button>
-            <a
-              href="/admin/reports/produzione"
-              className="rounded-md border px-4 py-2 text-sm text-black hover:bg-gray-100"
-            >
-              Reset
-            </a>
-          </div>
-        </form>
-      </section>
+              <input
+                type="date"
+                name="from"
+                defaultValue={from}
+                className="h-10 rounded-md border border-input px-3"
+                required
+              />
+            </div>
 
-      <section className="rounded-lg border bg-white p-5">
-        <div className="overflow-hidden rounded-md border">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm">A</label>
+
+              <input
+                type="date"
+                name="to"
+                defaultValue={to}
+                className="h-10 rounded-md border border-input px-3"
+                required
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-sm">Azienda</label>
+
+              <select
+                name="customerId"
+                defaultValue={sp.customerId ?? ""}
+                className="h-10 rounded-md border border-input px-3"
+              >
+                <option value="">Tutte</option>
+
+                {activeCustomers.map((c) => (
+                  <option key={String(c.id)} value={String(c.id)}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-end gap-2">
+
+              <Button type="submit">
+                Applica
+              </Button>
+
+              <Button asChild variant="outline">
+                <a href="/admin/reports/produzione">
+                  Reset
+                </a>
+              </Button>
+
+            </div>
+
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Tabella risultati */}
+      <Card>
+
+        <CardHeader>
+          <CardTitle className="text-base">
+            Top modelli lavorati
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className="overflow-x-auto">
+
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left">
-              <tr className="text-gray-700">
-                <th className="px-4 py-3">Azienda</th>
-                <th className="px-4 py-3">Modello</th>
-                <th className="px-4 py-3">Tot</th>
-                <th className="px-4 py-3">OK</th>
-                <th className="px-4 py-3">KO</th>
-                <th className="px-4 py-3">Ore</th>
+
+            <thead className="border-b text-left">
+              <tr className="text-muted-foreground">
+                <th className="py-2 pr-4">Azienda</th>
+                <th className="py-2 pr-4">Modello</th>
+                <th className="py-2 pr-4">Tot</th>
+                <th className="py-2 pr-4">OK</th>
+                <th className="py-2 pr-4">KO</th>
+                <th className="py-2 pr-4">Ore</th>
               </tr>
             </thead>
+
             <tbody>
+
               {norm.length === 0 ? (
                 <tr>
-                  <td className="px-4 py-4 text-gray-600" colSpan={6}>
+                  <td className="py-4 text-muted-foreground" colSpan={6}>
                     Nessun dato nel periodo selezionato.
                   </td>
                 </tr>
               ) : (
                 norm.map((r) => (
-                  <tr key={`${r.customerId}-${r.modelId}`} className="border-t">
-                    <td className="px-4 py-3 text-black">{r.customerName}</td>
-                    <td className="px-4 py-3 text-black">{r.modelName}</td>
-                    <td className="px-4 py-3 text-black">{r.qtyTot}</td>
-                    <td className="px-4 py-3 text-black">{r.qtyOk}</td>
-                    <td className="px-4 py-3 text-black">{r.qtyKo}</td>
-                    <td className="px-4 py-3 text-black">{fmtMinutes(r.minutes)}</td>
+                  <tr key={`${r.customerId}-${r.modelId}`} className="border-b">
+
+                    <td className="py-2 pr-4">
+                      {r.customerName}
+                    </td>
+
+                    <td className="py-2 pr-4 font-medium">
+                      {r.modelName}
+                    </td>
+
+                    <td className="py-2 pr-4">
+                      <Badge variant="secondary">
+                        {r.qtyTot}
+                      </Badge>
+                    </td>
+
+                    <td className="py-2 pr-4">
+                      {r.qtyOk}
+                    </td>
+
+                    <td className="py-2 pr-4">
+                      {r.qtyKo}
+                    </td>
+
+                    <td className="py-2 pr-4">
+                      {fmtMinutes(r.minutes)}
+                    </td>
+
                   </tr>
                 ))
               )}
+
             </tbody>
+
           </table>
-        </div>
-      </section>
+
+        </CardContent>
+
+      </Card>
+
     </div>
   );
 }

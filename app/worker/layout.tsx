@@ -1,4 +1,3 @@
-// app/worker/layout.tsx
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import LogoutButton from "@/components/LogoutButton";
@@ -13,28 +12,36 @@ export default async function WorkerLayout({
   if (user.role !== "WORKER") redirect("/admin");
 
   return (
-    <div className="min-h-screen bg-gray-100 text-gray-900">
-      <header className="flex items-center justify-between border-b bg-white px-8 py-4">
-        <div>
-          <div className="text-xl font-semibold text-black">Worker</div>
-          <div className="text-sm text-black">
-            {user.firstName} {user.lastName} ({user.username})
+    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+      {/* HEADER */}
+      <header className="border-b bg-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <div>
+            <div className="text-lg font-semibold text-black">
+              Eurosystem
+            </div>
+            <div className="text-sm text-zinc-600">
+              {user.firstName} {user.lastName} ({user.username})
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/worker/logs"
-            className="rounded-md border px-3 py-2 text-sm text-black hover:bg-gray-100"
-          >
-            Lavorazioni
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/worker/logs"
+              className="rounded-md border px-3 py-2 text-sm text-black hover:bg-zinc-100"
+            >
+              Lavorazioni
+            </Link>
 
-          <LogoutButton />
+            <LogoutButton />
+          </div>
         </div>
       </header>
 
-      <main className="p-8 text-gray-900">{children}</main>
+      {/* CONTENT */}
+      <main className="mx-auto max-w-7xl p-6">
+        {children}
+      </main>
     </div>
   );
 }

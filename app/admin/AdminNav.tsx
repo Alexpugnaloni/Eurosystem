@@ -3,16 +3,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type Item = { href: string; label: string };
 
 const items: Item[] = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/users", label: "Utenti" },
-
-  // ✅ NEW: schede lavoro dipendenti
   { href: "/admin/worklogs", label: "Schede dipendenti" },
-
   { href: "/admin/customers", label: "Aziende" },
   { href: "/admin/models", label: "Modelli" },
   { href: "/admin/phases", label: "Fasi" },
@@ -28,22 +27,25 @@ export default function AdminNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-wrap items-center gap-2">
+    <nav className="flex flex-wrap items-center gap-1">
       {items.map((it) => {
         const active = isActive(pathname, it.href);
+
         return (
-          <Link
+          <Button
             key={it.href}
-            href={it.href}
-            className={[
-              "rounded-md border px-3 py-2 text-sm transition",
+            asChild
+            variant={active ? "default" : "ghost"}
+            size="sm"
+            className={cn(
+              "h-9",
               active
-                ? "bg-black text-white border-black"
-                : "bg-white text-black hover:bg-gray-100 border-gray-300",
-            ].join(" ")}
+                ? "shadow-sm"
+                : "text-slate-700 hover:text-slate-900 hover:bg-slate-100"
+            )}
           >
-            {it.label}
-          </Link>
+            <Link href={it.href}>{it.label}</Link>
+          </Button>
         );
       })}
     </nav>

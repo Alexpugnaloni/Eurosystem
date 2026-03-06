@@ -40,6 +40,7 @@ export default function WorkerLogsClient(props: {
   rows: Row[];
 }) {
   const router = useRouter();
+
   const mode = props.mode ?? "history";
   const isTodayMode = mode === "today";
 
@@ -52,22 +53,19 @@ export default function WorkerLogsClient(props: {
     {}
   );
 
-  // ✅ serve per chiamare deleteAction dentro una transition (evita warning Next/React)
   const [isPendingDelete, startDeleteTransition] = useTransition();
-
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   function applyFilters() {
     const sp = new URLSearchParams();
 
-    // ✅ In today-mode NON mettiamo la data nella querystring
     if (!isTodayMode && date) sp.set("date", date);
-
     if (customerId) sp.set("customerId", customerId);
     if (type) sp.set("type", type);
 
     const basePath = isTodayMode ? "/worker/logs" : "/worker/logs/history";
     const qs = sp.toString();
+
     router.push(qs ? `${basePath}?${qs}` : basePath);
   }
 
@@ -76,128 +74,87 @@ export default function WorkerLogsClient(props: {
     [props.rows]
   );
 
-  // layout filtri: in today-mode togliamo la colonna data
-  const filterGridCols = isTodayMode ? "1fr 200px 120px" : "160px 1fr 200px 120px";
-
   const disableDeleteUI = isDeleting || isPendingDelete;
 
   return (
-    <div style={{ padding: 16 }}>
-      {/* ✅ HEADER centrato + bottoni centrati sotto */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-        <div style={{ textAlign: "center", width: "100%" }}>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>
-            {isTodayMode ? "Le mie attività di oggi" : "Storico attività"}
-          </h1>
+    <div className="space-y-6">
 
-          <p style={{ marginTop: 8, color: "#666", fontSize: 15 }}>
-            {isTodayMode
-              ? "Qui puoi registrare e monitorare le attività della giornata corrente."
-              : "Consulta e filtra le attività dei giorni precedenti."}
-          </p>
+      {/* HEADER */}
+      <div className="text-center space-y-3">
+        <h1 className="text-2xl font-semibold">
+          {isTodayMode ? "Le mie attività di oggi" : "Storico attività"}
+        </h1>
 
-          <div
-            style={{
-              marginTop: 10,
-              display: "inline-block",
-              padding: "6px 14px",
-              borderRadius: 999,
-              fontSize: 12,
-              fontWeight: 600,
-              background: isTodayMode ? "#e6f4ea" : "#eef2ff",
-              color: isTodayMode ? "#137333" : "#3730a3",
-            }}
-          >
+        <p className="text-sm text-zinc-600">
+          {isTodayMode
+            ? "Qui puoi registrare e monitorare le attività della giornata corrente."
+            : "Consulta e filtra le attività dei giorni precedenti."}
+        </p>
+
+        <div>
+          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium
+            ${isTodayMode ? "bg-green-100 text-green-800" : "bg-indigo-100 text-indigo-800"}`}>
             {isTodayMode ? "Modalità Operativa (Oggi)" : "Modalità Consultazione (Storico)"}
-          </div>
-
-          <p style={{ marginTop: 14, fontSize: 16 }}>
-            Totale {isTodayMode ? "oggi" : "giornata selezionata"}:{" "}
-            <strong>{fmtMinutes(totalMinutes)}</strong>
-          </p>
+          </span>
         </div>
 
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-          {/* ✅ In today-mode: bottone storico */}
-          {isTodayMode ? (
-            <Link
-              href={`/worker/logs/history?date=${encodeURIComponent(date)}`}
-              style={{
-                padding: "10px 12px",
-                border: "1px solid #ddd",
-                borderRadius: 10,
-                textDecoration: "none",
-                background: "white",
-              }}
-            >
-              📚 Consulta Storico
-            </Link>
-          ) : (
-            <Link
-              href="/worker/logs"
-              style={{
-                padding: "10px 12px",
-                border: "1px solid #ddd",
-                borderRadius: 10,
-                textDecoration: "none",
-                background: "white",
-              }}
-            >
-              Torna alla produzione Odierna
-            </Link>
-          )}
+        <p className="text-base">
+          Totale {isTodayMode ? "oggi" : "giornata selezionata"}:{" "}
+          <span className="font-semibold">{fmtMinutes(totalMinutes)}</span>
+        </p>
+      </div>
 
-          {/* ✅ Nuova attività SOLO in today-mode */}
-          {isTodayMode ? (
-            <Link
-              href={`/worker/logs/new?date=${encodeURIComponent(date)}`}
-              style={{
-                padding: "10px 12px",
-                border: "1px solid #ddd",
-                borderRadius: 10,
-                textDecoration: "none",
-                background: "white",
-              }}
-            >
-              + Nuova attività
-            </Link>
-          ) : null}
-        </div>
+      {/* ACTIONS */}
+      <div className="flex justify-center flex-wrap gap-3">
+
+        {isTodayMode ? (
+          <Link
+            href={`/worker/logs/history?date=${encodeURIComponent(date)}`}
+            className="rounded-md border px-4 py-2 text-sm hover:bg-zinc-100"
+          >
+            📚 Consulta Storico
+          </Link>
+        ) : (
+          <Link
+            href="/worker/logs"
+            className="rounded-md border px-4 py-2 text-sm hover:bg-zinc-100"
+          >
+            Torna alla produzione odierna
+          </Link>
+        )}
+
+        {isTodayMode && (
+          <Link
+            href={`/worker/logs/new?date=${encodeURIComponent(date)}`}
+            className="rounded-md border px-4 py-2 text-sm hover:bg-zinc-100"
+          >
+            + Nuova attività
+          </Link>
+        )}
+
       </div>
 
       {/* FILTRI */}
-      <div
-        style={{
-          marginTop: 18,
-          display: "grid",
-          gridTemplateColumns: filterGridCols,
-          gap: 12,
-          alignItems: "end",
-          padding: 12,
-          border: "1px solid #eee",
-          borderRadius: 12,
-          background: "#fafafa",
-        }}
-      >
-        {/* ✅ DATA: solo nello storico */}
-        {!isTodayMode ? (
-          <label>
-            <div style={{ fontSize: 12, color: "#666" }}>Data</div>
+      <div className="rounded-lg border bg-white p-4 grid gap-3 md:grid-cols-4">
+
+        {!isTodayMode && (
+          <div className="flex flex-col gap-1">
+            <label className="text-sm">Data</label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              style={{ width: "100%", padding: 8 }}
+              className="rounded-md border px-3 py-2 text-sm"
             />
-          </label>
-        ) : null}
+          </div>
+        )}
 
-        <label>
-          <div style={{ fontSize: 12, color: "#666" }}>Azienda</div>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm">Azienda</label>
           <select
             value={customerId}
             onChange={(e) => setCustomerId(e.target.value)}
-            style={{ width: "100%", padding: 8 }}
+            className="rounded-md border px-3 py-2 text-sm"
           >
             <option value="">Tutte</option>
             {props.customers.map((c) => (
@@ -206,198 +163,148 @@ export default function WorkerLogsClient(props: {
               </option>
             ))}
           </select>
-        </label>
+        </div>
 
-        <label>
-          <div style={{ fontSize: 12, color: "#666" }}>Tipo</div>
-          <select value={type} onChange={(e) => setType(e.target.value)} style={{ width: "100%", padding: 8 }}>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm">Tipo</label>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            className="rounded-md border px-3 py-2 text-sm"
+          >
             <option value="">Tutti</option>
             <option value="PRODUCTION">Produzione</option>
             <option value="CLEANING">Pulizie</option>
           </select>
-        </label>
+        </div>
 
-        <button
-          type="button"
-          onClick={applyFilters}
-          style={{
-            padding: "10px 12px",
-            border: "1px solid #ddd",
-            borderRadius: 10,
-            background: "white",
-            cursor: "pointer",
-          }}
-        >
-          Filtra
-        </button>
+        <div className="flex items-end">
+          <button
+            onClick={applyFilters}
+            className="rounded-md border px-4 py-2 text-sm hover:bg-zinc-100"
+          >
+            Filtra
+          </button>
+        </div>
       </div>
 
-      {deleteState.error ? <p style={{ color: "crimson", marginTop: 12 }}>{deleteState.error}</p> : null}
-
-      {confirmDeleteId ? (
-        <div
-          style={{
-            marginTop: 12,
-            padding: 12,
-            border: "1px solid #f2c2c2",
-            borderRadius: 12,
-            background: "white",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-          }}
-        >
-          <div style={{ color: "#7a1f1f" }}>
-            <strong>Sei sicuro di voler eliminare questa attività?</strong>
+      {/* DELETE CONFIRM */}
+      {confirmDeleteId && (
+        <div className="flex items-center justify-between gap-4 rounded-md border border-red-200 bg-red-50 p-3">
+          <div className="text-sm font-medium text-red-800">
+            Sei sicuro di voler eliminare questa attività?
           </div>
 
-          <div style={{ display: "flex", gap: 10 }}>
+          <div className="flex gap-2">
             <button
-              type="button"
               disabled={disableDeleteUI}
               onClick={() => {
                 const fd = new FormData();
                 fd.set("id", confirmDeleteId);
 
-                startDeleteTransition(() => {
-                  deleteAction(fd);
-                });
-
+                startDeleteTransition(() => deleteAction(fd));
                 setConfirmDeleteId(null);
               }}
-              style={{
-                padding: "8px 10px",
-                border: "1px solid #f2c2c2",
-                color: "crimson",
-                borderRadius: 10,
-                background: "white",
-                cursor: "pointer",
-              }}
+              className="rounded-md border border-red-300 px-3 py-1 text-sm text-red-700 hover:bg-red-100"
             >
               Sì, elimina
             </button>
 
             <button
-              type="button"
               disabled={disableDeleteUI}
               onClick={() => setConfirmDeleteId(null)}
-              style={{
-                padding: "8px 10px",
-                border: "1px solid #ddd",
-                borderRadius: 10,
-                background: "white",
-                cursor: "pointer",
-              }}
+              className="rounded-md border px-3 py-1 text-sm hover:bg-zinc-100"
             >
               No
             </button>
           </div>
         </div>
-      ) : null}
+      )}
 
       {/* TABELLA */}
-      <div style={{ marginTop: 16, overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: "1px solid #eee" }}>
-              <th style={{ padding: 10, width: 120 }}>Orario</th>
-              <th style={{ padding: 10, width: 140 }}>Tipo</th>
-              <th style={{ padding: 10 }}>Dettagli</th>
-              <th style={{ padding: 10, width: 120 }}>Durata</th>
-              <th style={{ padding: 10, width: 120 }}>Quantità</th>
-              <th style={{ padding: 10, width: 160 }}></th>
+      <div className="overflow-x-auto rounded-md border bg-white">
+        <table className="w-full text-sm">
+
+          <thead className="bg-zinc-50 text-left">
+            <tr>
+              <th className="px-4 py-3">Orario</th>
+              <th className="px-4 py-3">Tipo</th>
+              <th className="px-4 py-3">Dettagli</th>
+              <th className="px-4 py-3">Durata</th>
+              <th className="px-4 py-3">Quantità</th>
+              <th className="px-4 py-3"></th>
             </tr>
           </thead>
 
           <tbody>
             {props.rows.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: 12, color: "#666" }}>
-                  {isTodayMode ? "Nessuna attività per oggi." : "Nessuna attività per questa data."}
+                <td colSpan={6} className="px-4 py-6 text-center text-zinc-500">
+                  {isTodayMode
+                    ? "Nessuna attività per oggi."
+                    : "Nessuna attività per questa data."}
                 </td>
               </tr>
-            ) : null}
+            ) : (
+              props.rows.map((r) => (
+                <tr key={String(r.id)} className="border-t">
 
-            {props.rows.map((r) => (
-              <tr key={String(r.id)} style={{ borderBottom: "1px solid #f0f0f0" }}>
-                <td style={{ padding: 10 }}>
-                  <div>
-                    <strong>
-                      {(r.startTime ?? "").slice(0, 5)}–{(r.endTime ?? "").slice(0, 5)}
-                    </strong>
-                  </div>
-                </td>
+                  <td className="px-4 py-3 font-medium">
+                    {(r.startTime ?? "").slice(0, 5)}–{(r.endTime ?? "").slice(0, 5)}
+                  </td>
 
-                <td style={{ padding: 10 }}>{r.activityType === "PRODUCTION" ? "Produzione" : "Pulizie"}</td>
+                  <td className="px-4 py-3">
+                    {r.activityType === "PRODUCTION" ? "Produzione" : "Pulizie"}
+                  </td>
 
-                <td style={{ padding: 10 }}>
-                  <div>
-                    <strong>{r.customerName}</strong>
-                  </div>
+                  <td className="px-4 py-3">
+                    <div className="font-medium">{r.customerName}</div>
 
-                  {r.activityType === "PRODUCTION" ? (
-                    <div style={{ color: "#666" }}>
-                      {r.modelName ?? "-"} • {r.phaseName ?? "-"}
-                    </div>
-                  ) : (
-                    <div style={{ color: "#666" }}>Attività di pulizia</div>
-                  )}
+                    {r.activityType === "PRODUCTION" ? (
+                      <div className="text-zinc-500 text-sm">
+                        {r.modelName ?? "-"} • {r.phaseName ?? "-"}
+                      </div>
+                    ) : (
+                      <div className="text-zinc-500 text-sm">Attività di pulizia</div>
+                    )}
 
-                  {r.notes ? <div style={{ marginTop: 6, color: "#444" }}>{r.notes}</div> : null}
-                </td>
+                    {r.notes && (
+                      <div className="text-sm text-zinc-600 mt-1">{r.notes}</div>
+                    )}
+                  </td>
 
-                <td style={{ padding: 10 }}>{fmtMinutes(r.durationMinutes)}</td>
+                  <td className="px-4 py-3">{fmtMinutes(r.durationMinutes)}</td>
 
-                <td style={{ padding: 10 }}>
-                  {r.activityType === "PRODUCTION" ? (
-                    <span>
-                      OK {r.qtyOk} / KO {r.qtyKo}
-                    </span>
-                  ) : (
-                    <span style={{ color: "#666" }}>—</span>
-                  )}
-                </td>
+                  <td className="px-4 py-3">
+                    {r.activityType === "PRODUCTION"
+                      ? `OK ${r.qtyOk} / KO ${r.qtyKo}`
+                      : "—"}
+                  </td>
 
-                <td style={{ padding: 10, textAlign: "right" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+                  <td className="px-4 py-3 text-right space-x-2">
+
                     <Link
                       href={`/worker/logs/${r.id}/edit`}
-                      style={{
-                        padding: "8px 10px",
-                        border: "1px solid #ddd",
-                        borderRadius: 10,
-                        textDecoration: "none",
-                        display: "inline-block",
-                        minWidth: 96,
-                        textAlign: "center",
-                        background: "white",
-                      }}
+                      className="inline-block rounded-md border px-3 py-1 text-sm hover:bg-zinc-100"
                     >
                       Modifica
                     </Link>
 
                     <button
-                      type="button"
                       disabled={disableDeleteUI}
                       onClick={() => setConfirmDeleteId(String(r.id))}
-                      style={{
-                        padding: "8px 10px",
-                        border: "1px solid #f2c2c2",
-                        color: "crimson",
-                        borderRadius: 10,
-                        background: "white",
-                        cursor: "pointer",
-                        minWidth: 96,
-                      }}
+                      className="inline-block rounded-md border border-red-300 px-3 py-1 text-sm text-red-700 hover:bg-red-100"
                     >
                       Elimina
                     </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+
+                  </td>
+
+                </tr>
+              ))
+            )}
           </tbody>
+
         </table>
       </div>
     </div>

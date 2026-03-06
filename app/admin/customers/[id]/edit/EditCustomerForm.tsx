@@ -1,8 +1,14 @@
+// app/admin/customers/[id]/edit/EditCustomerForm.tsx
 "use client";
 
 import { useActionState } from "react";
 import Link from "next/link";
 import { updateCustomerAction, type EditCustomerState } from "./actions";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 export default function EditCustomerForm({
   customerId,
@@ -18,7 +24,7 @@ export default function EditCustomerForm({
   const [state, formAction, pending] = useActionState(boundAction, initialState);
 
   return (
-    <div className="space-y-6 text-black">
+    <div className="space-y-6">
       {state.error && (
         <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {state.error}
@@ -26,52 +32,48 @@ export default function EditCustomerForm({
       )}
 
       {isInternal && (
-        <div className="rounded-md border bg-gray-50 p-3 text-sm text-black">
-          <div className="font-medium">Azienda interna</div>
-          <div className="mt-1">È unica (solo voi). Non è disattivabile.</div>
+        <div className="rounded-md border bg-muted/40 p-3 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="font-medium">Azienda interna</div>
+            <Badge variant="secondary">Interna</Badge>
+          </div>
+          <div className="mt-1 text-muted-foreground">
+            È unica (solo voi). Non è disattivabile.
+          </div>
         </div>
       )}
 
-      <form action={formAction} className="space-y-4">
-        <div>
-          <label className="text-sm font-medium text-black">Nome azienda</label>
-          <input
-            name="name"
-            defaultValue={state.values?.name ?? ""}
-            className="mt-1 w-full rounded-md border px-3 py-2 text-black"
-            required
-          />
+      <form action={formAction} className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="name">Nome azienda</Label>
+          <Input id="name" name="name" defaultValue={state.values?.name ?? ""} required />
         </div>
 
-        <div className="flex items-end gap-2">
+        <div className="flex items-center gap-2">
           <input
             id="isActive"
             name="isActive"
             type="checkbox"
             defaultChecked={state.values?.isActive ?? true}
             disabled={isInternal}
+            className="h-4 w-4 rounded border border-input disabled:cursor-not-allowed disabled:opacity-60"
           />
-          <label htmlFor="isActive" className="text-sm text-black">
+          <Label htmlFor="isActive" className="font-normal">
             Attiva
-          </label>
-          {isInternal && <span className="text-xs text-black">(bloccato)</span>}
+          </Label>
+          {isInternal ? (
+            <span className="text-xs text-muted-foreground">(bloccato)</span>
+          ) : null}
         </div>
 
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-md bg-black px-4 py-2 text-white text-sm disabled:opacity-60"
-          >
+        <div className="flex flex-wrap gap-3">
+          <Button type="submit" disabled={pending}>
             {pending ? "Salvataggio..." : "Salva"}
-          </button>
+          </Button>
 
-          <Link
-            href="/admin/customers"
-            className="rounded-md border px-4 py-2 text-sm text-black hover:bg-gray-100"
-          >
-            Torna alla lista
-          </Link>
+          <Button asChild variant="outline">
+            <Link href="/admin/customers">Torna alla lista</Link>
+          </Button>
         </div>
       </form>
     </div>

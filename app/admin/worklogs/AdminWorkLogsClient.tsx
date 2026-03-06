@@ -1,9 +1,12 @@
-// app/admin/worklogs/AdminWorkLogsClient.tsx
 "use client";
 
 import Link from "next/link";
 import { useActionState, useTransition } from "react";
 import { deleteWorkLogAdminAction, type DeleteWorkLogAdminState } from "./actions";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 type Row = {
   id: bigint;
@@ -36,8 +39,6 @@ function fmtMin(min: number) {
 }
 
 function formatIT(iso: string) {
-  // iso = "YYYY-MM-DD"
-  // Uso UTC per evitare edge-case di timezone (es. giorno che slitta)
   const d = new Date(`${iso}T00:00:00Z`);
   return d.toLocaleDateString("it-IT");
 }
@@ -59,115 +60,138 @@ export default function AdminWorkLogsClient({ days }: { days: Day[] }) {
   }
 
   return (
-    <div>
+    <div className="space-y-4">
       {state.message && (
-        <div
-          className="mb-3 p-2 border rounded"
-          style={{ background: state.ok ? "#f3fff3" : "#fff3f3" }}
-        >
-          {state.message}
-        </div>
+        <Card>
+          <CardContent className="py-3 text-sm">
+            {state.message}
+          </CardContent>
+        </Card>
       )}
 
-      {days.length === 0 && <div>Nessuna attività trovata.</div>}
+      {days.length === 0 && (
+        <Card>
+          <CardContent className="py-6 text-sm text-muted-foreground">
+            Nessuna attività trovata.
+          </CardContent>
+        </Card>
+      )}
 
-      <div className="grid gap-3">
-        {days.map((d) => {
-          const totalDay = d.rows.reduce((sum, r) => sum + (r.durationMinutes ?? 0), 0);
-          const prodDay = d.rows
-            .filter((r) => r.activityType === "PRODUCTION")
-            .reduce((sum, r) => sum + (r.durationMinutes ?? 0), 0);
-          const cleanDay = totalDay - prodDay;
+      {days.map((d) => {
+        const totalDay = d.rows.reduce((sum, r) => sum + (r.durationMinutes ?? 0), 0);
 
-          return (
-            <details key={d.workDate} className="border rounded p-3 bg-white">
-              <summary className="cursor-pointer select-none flex items-center gap-3">
-                {/* ✅ Data in formato gg/mm/aaaa */}
-                <b className="text-black">{formatIT(d.workDate)}</b>
+        const prodDay = d.rows
+          .filter((r) => r.activityType === "PRODUCTION")
+          .reduce((sum, r) => sum + (r.durationMinutes ?? 0), 0);
 
-                <span className="text-black">
-                  • Totale: {fmtMin(totalDay)} (Prod: {fmtMin(prodDay)} • Pul: {fmtMin(cleanDay)})
+        const cleanDay = totalDay - prodDay;
+
+        return (
+          <Card key={d.workDate}>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex flex-wrap items-center gap-3 text-base">
+                <span>{formatIT(d.workDate)}</span>
+
+                <Badge variant="secondary">
+                  Totale {fmtMin(totalDay)}
+                </Badge>
+
+                <Badge variant="outline">
+                  Prod {fmtMin(prodDay)}
+                </Badge>
+
+                <Badge variant="outline">
+                  Pul {fmtMin(cleanDay)}
+                </Badge>
+
+                <span className="ml-auto text-sm text-muted-foreground">
+                  Attività: {d.rows.length}
                 </span>
-                <span className="ml-auto text-black">Attività: {d.rows.length}</span>
-              </summary>
+              </CardTitle>
+            </CardHeader>
 
-              <div className="mt-3 overflow-x-auto">
-                <table className="w-full border-collapse text-sm text-black">
-                  <thead>
-                    <tr>
-                      {[
-                        "Dipendente",
-                        "Azienda",
-                        "Tipo",
-                        "Modello",
-                        "Fase",
-                        "Inizio",
-                        "Fine",
-                        "Durata",
-                        "OK",
-                        "KO",
-                        "Note",
-                        "Azioni",
-                      ].map((h) => (
-                        <th key={h} className="text-left border-b p-2 whitespace-nowrap">
-                          {h}
-                        </th>
-                      ))}
+            <CardContent className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b text-left">
+                  <tr className="text-muted-foreground">
+                    <th className="py-2 pr-4">Dipendente</th>
+                    <th className="py-2 pr-4">Azienda</th>
+                    <th className="py-2 pr-4">Tipo</th>
+                    <th className="py-2 pr-4">Modello</th>
+                    <th className="py-2 pr-4">Fase</th>
+                    <th className="py-2 pr-4">Inizio</th>
+                    <th className="py-2 pr-4">Fine</th>
+                    <th className="py-2 pr-4">Durata</th>
+                    <th className="py-2 pr-4">OK</th>
+                    <th className="py-2 pr-4">KO</th>
+                    <th className="py-2 pr-4">Note</th>
+                    <th className="py-2 text-right">Azioni</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {d.rows.map((r) => (
+                    <tr key={String(r.id)} className="border-b">
+                      <td className="py-2 pr-4">
+                        {r.lastName} {r.firstName} ({r.employeeCode})
+                      </td>
+
+                      <td className="py-2 pr-4">{r.customerName}</td>
+
+                      <td className="py-2 pr-4">
+                        {r.activityType === "PRODUCTION" ? "Produzione" : "Pulizie"}
+                      </td>
+
+                      <td className="py-2 pr-4">{r.modelName ?? "—"}</td>
+
+                      <td className="py-2 pr-4">{r.phaseName ?? "—"}</td>
+
+                      <td className="py-2 pr-4">
+                        {String(r.startTime ?? "").slice(0, 5)}
+                      </td>
+
+                      <td className="py-2 pr-4">
+                        {String(r.endTime ?? "").slice(0, 5)}
+                      </td>
+
+                      <td className="py-2 pr-4">{r.durationMinutes}m</td>
+
+                      <td className="py-2 pr-4">
+                        {r.activityType === "PRODUCTION" ? r.qtyOk : "—"}
+                      </td>
+
+                      <td className="py-2 pr-4">
+                        {r.activityType === "PRODUCTION" ? r.qtyKo : "—"}
+                      </td>
+
+                      <td className="py-2 pr-4 max-w-xs truncate">
+                        {r.notes ?? ""}
+                      </td>
+
+                      <td className="py-2 text-right space-x-2">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/admin/worklogs/${String(r.id)}/edit`}>
+                            Modifica
+                          </Link>
+                        </Button>
+
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={pending}
+                          onClick={() => onDelete(r.id)}
+                        >
+                          Elimina
+                        </Button>
+                      </td>
                     </tr>
-                  </thead>
-
-                  <tbody>
-                    {d.rows.map((r) => (
-                      <tr key={String(r.id)}>
-                        <td className="p-2 border-b">
-                          {r.lastName} {r.firstName} ({r.employeeCode})
-                        </td>
-                        <td className="p-2 border-b">{r.customerName}</td>
-                        <td className="p-2 border-b">
-                          {r.activityType === "PRODUCTION" ? "Produzione" : "Pulizie"}
-                        </td>
-                        <td className="p-2 border-b">{r.modelName ?? "—"}</td>
-                        <td className="p-2 border-b">{r.phaseName ?? "—"}</td>
-                        <td className="p-2 border-b">{String(r.startTime ?? "").slice(0, 5)}</td>
-                        <td className="p-2 border-b">{String(r.endTime ?? "").slice(0, 5)}</td>
-                        <td className="p-2 border-b">{r.durationMinutes}m</td>
-                        <td className="p-2 border-b">
-                          {r.activityType === "PRODUCTION" ? r.qtyOk : "—"}
-                        </td>
-                        <td className="p-2 border-b">
-                          {r.activityType === "PRODUCTION" ? r.qtyKo : "—"}
-                        </td>
-                        <td className="p-2 border-b" style={{ maxWidth: 320 }}>
-                          {r.notes ?? ""}
-                        </td>
-                        <td className="p-2 border-b whitespace-nowrap">
-                          <Link href={`/admin/worklogs/${String(r.id)}/edit`}>Modifica</Link>
-                          {"  "}•{"  "}
-                          <button
-                            type="button"
-                            onClick={() => onDelete(r.id)}
-                            disabled={pending}
-                            className="underline"
-                            style={{
-                              border: "none",
-                              background: "transparent",
-                              padding: 0,
-                              color: pending ? "#777" : "crimson",
-                              cursor: pending ? "not-allowed" : "pointer",
-                            }}
-                          >
-                            Elimina
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </details>
-          );
-        })}
-      </div>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

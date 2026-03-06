@@ -6,8 +6,6 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import WorkerLogsClient from "./WorkerLogsClient";
 
 type SearchParams = {
-  // date viene ignorata in questa pagina (vista "oggi")
-  date?: string; // YYYY-MM-DD
   customerId?: string;
   type?: "PRODUCTION" | "CLEANING";
 };
@@ -28,18 +26,24 @@ export default async function WorkerLogsPage({
   const user = await requireWorker();
   const sp = await searchParams;
 
-  // ✅ Vista "oggi": la data è SEMPRE oggi (ignoro sp.date)
   const workDate = todayISO();
   const customerId = sp.customerId ? BigInt(sp.customerId) : null;
   const type = sp.type ?? null;
 
   const activeCustomers = await db
-    .select()
+    .select({
+      id: customers.id,
+      name: customers.name,
+    })
     .from(customers)
     .where(eq(customers.isActive, true))
     .orderBy(asc(customers.name));
 
-  const whereParts = [eq(workLogs.userId, user.id), eq(workLogs.workDate, workDate)];
+  const whereParts = [
+    eq(workLogs.userId, user.id),
+    eq(workLogs.workDate, workDate),
+  ];
+
   if (customerId) whereParts.push(eq(workLogs.customerId, customerId));
   if (type) whereParts.push(eq(workLogs.activityType, type));
 

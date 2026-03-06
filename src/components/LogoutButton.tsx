@@ -1,22 +1,34 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 export default function LogoutButton() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   async function handleLogout() {
-    await fetch("/api/logout", { method: "POST" });
-    router.replace("/login");
-    router.refresh();
+    try {
+      setLoading(true);
+
+      await fetch("/api/logout", { method: "POST" });
+
+      router.replace("/login");
+      router.refresh();
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <button
+    <Button
+      variant="destructive"
+      size="sm"
       onClick={handleLogout}
-      className="rounded-md bg-red-600 px-4 py-2 text-white text-sm"
+      disabled={loading}
     >
-      Esci
-    </button>
+      {loading ? "Uscita..." : "Esci"}
+    </Button>
   );
 }

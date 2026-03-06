@@ -5,6 +5,11 @@ import { useActionState } from "react";
 import { updateUserAndMaybeResetPasswordAction, type EditUserAllState } from "./actions";
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+
 export default function EditUserForm({
   userId,
   defaultFirstName,
@@ -34,68 +39,56 @@ export default function EditUserForm({
   }
 
   return (
-    <div className="space-y-6 text-black">
+    <div className="space-y-6">
       {state.error && (
         <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {state.error}
         </div>
       )}
 
-      {/* Se password resettata, mostriamo box con copia */}
-      {state.passwordReset && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4">
-          <div className="flex items-start justify-between gap-4">
+      {state.passwordReset ? (
+        <Card className="border-emerald-200 bg-emerald-50 p-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <div className="font-medium">Password aggiornata</div>
+              <div className="text-sm font-semibold">Password aggiornata</div>
               <div className="mt-2 text-sm">
-                <span className="font-semibold">Nuova password:</span>{" "}
-                {state.passwordReset.password}
+                <span className="font-semibold">Nuova password:</span> {state.passwordReset.password}
               </div>
-              <div className="mt-2 text-xs">
+              <div className="mt-2 text-xs text-muted-foreground">
                 Copiala ora: non verrà mostrata dopo refresh.
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={copyPassword}
-                className="rounded-md bg-black px-3 py-2 text-sm text-white"
-              >
+            <div className="flex gap-2 sm:flex-col">
+              <Button type="button" onClick={copyPassword}>
                 Copia password
-              </button>
+              </Button>
 
-              <Link
-                href="/admin/users"
-                className="rounded-md border px-3 py-2 text-sm text-black text-center hover:bg-gray-100"
-              >
-                Torna alla lista
-              </Link>
+              <Button asChild variant="outline">
+                <Link href="/admin/users">Torna alla lista</Link>
+              </Button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Un solo form: salva dati + (opzionale) password */}
-      {!state.passwordReset && (
+        </Card>
+      ) : (
         <form action={formAction} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium">Nome</label>
-              <input
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">Nome</Label>
+              <Input
+                id="firstName"
                 name="firstName"
                 defaultValue={state.values?.firstName ?? ""}
-                className="mt-1 w-full rounded-md border px-3 py-2"
                 required
               />
             </div>
 
-            <div>
-              <label className="text-sm font-medium">Cognome</label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Cognome</Label>
+              <Input
+                id="lastName"
                 name="lastName"
                 defaultValue={state.values?.lastName ?? ""}
-                className="mt-1 w-full rounded-md border px-3 py-2"
                 required
               />
             </div>
@@ -107,45 +100,35 @@ export default function EditUserForm({
               name="isActive"
               type="checkbox"
               defaultChecked={state.values?.isActive ?? true}
+              className="h-4 w-4 rounded border border-input"
             />
-            <label htmlFor="isActive" className="text-sm">
+            <Label htmlFor="isActive" className="font-normal">
               Attivo
-            </label>
+            </Label>
           </div>
 
-          <div className="border-t pt-4">
-            <h2 className="text-lg font-semibold">Reset password (opzionale)</h2>
-            <p className="mt-1 text-sm">
+          <div className="rounded-md border p-4">
+            <div className="text-sm font-semibold">Reset password (opzionale)</div>
+            <p className="mt-1 text-sm text-muted-foreground">
               Compila solo se vuoi impostare una nuova password.
             </p>
 
-            <div className="mt-4 grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">Nuova password</label>
-                <input
-                  name="password"
-                  type="password"
-                  className="mt-1 w-full rounded-md border px-3 py-2"
-                />
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="password">Nuova password</Label>
+                <Input id="password" name="password" type="password" />
               </div>
-              <div>
-                <label className="text-sm font-medium">Conferma password</label>
-                <input
-                  name="passwordConfirm"
-                  type="password"
-                  className="mt-1 w-full rounded-md border px-3 py-2"
-                />
+
+              <div className="space-y-2">
+                <Label htmlFor="passwordConfirm">Conferma password</Label>
+                <Input id="passwordConfirm" name="passwordConfirm" type="password" />
               </div>
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-md bg-black px-4 py-2 text-white text-sm disabled:opacity-60"
-          >
+          <Button type="submit" disabled={pending}>
             {pending ? "Salvataggio..." : "Salva"}
-          </button>
+          </Button>
         </form>
       )}
     </div>

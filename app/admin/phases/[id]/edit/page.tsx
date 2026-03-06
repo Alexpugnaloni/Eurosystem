@@ -4,7 +4,12 @@ import { customers, phases } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
+import Link from "next/link";
 import EditPhaseForm from "./EditPhaseForm";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export default async function EditPhasePage({
   params,
@@ -60,16 +65,29 @@ export default async function EditPhasePage({
   };
 
   return (
-    <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-black">Modifica fase</h1>
-        <p className="text-sm text-gray-600">
-          Azienda: <span className="font-medium">{phase.customerName}</span>
-          {phase.customerIsInternal ? " (Interna)" : ""}
-        </p>
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Modifica fase</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Azienda: <span className="font-medium text-foreground">{phase.customerName}</span>{" "}
+            {phase.customerIsInternal ? <Badge variant="secondary">Interna</Badge> : null}
+          </p>
+        </div>
+
+        <Button asChild variant="outline">
+          <Link href="/admin/phases">Torna alla lista</Link>
+        </Button>
       </div>
 
-      <EditPhaseForm phase={phase} />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Dettagli</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EditPhaseForm phase={phase} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -181,215 +181,221 @@ export default function EditWorkLogForm(props: {
   }
 
   return (
-    <div style={ui.page}>
-      <div style={ui.card}>
-        <div style={ui.titleWrap}>
-          <h1 style={ui.h1}>Modifica attività</h1>
-          <p style={ui.subtitle}>Modifica produzione o pulizie. Nessun overlap permesso.</p>
+  <div className="flex justify-center p-6">
+    <div className="w-full max-w-3xl rounded-xl border bg-white p-6 shadow-sm">
+
+      <div className="text-center">
+        <h1 className="text-2xl font-semibold">
+          Modifica attività
+        </h1>
+
+        <p className="text-sm text-zinc-600 mt-2">
+          Modifica produzione o pulizie. Nessun overlap permesso.
+        </p>
+      </div>
+
+      {clientError && (
+        <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 text-center">
+          {clientError}
+        </div>
+      )}
+
+      {serverState.error && (
+        <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 text-center">
+          {serverState.error}
+        </div>
+      )}
+
+      <form
+        action={action}
+        onSubmit={handleSubmit}
+        className="mt-6 grid gap-4 md:grid-cols-2"
+      >
+
+        <input type="hidden" name="id" value={props.id} />
+
+        {/* Tipo */}
+        <div>
+          <label className="text-sm text-zinc-600">Tipo attività</label>
+          <select
+            name="activityType"
+            value={activityType}
+            onChange={(e) => onChangeActivityType(e.target.value as ActivityType)}
+            className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+          >
+            <option value="PRODUCTION">Produzione</option>
+            <option value="CLEANING">Pulizie</option>
+          </select>
         </div>
 
-        
+        {/* Data */}
+        <div>
+          <label className="text-sm text-zinc-600">Data</label>
+          <input
+            type="date"
+            name="workDate"
+            value={workDate}
+            onChange={(e) => {
+              setWorkDate(e.target.value);
+              setClientError("");
+            }}
+            className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+          />
+        </div>
 
-        {clientError ? <div style={ui.err}>{clientError}</div> : null}
-        {serverState.error ? <div style={ui.err}>{serverState.error}</div> : null}
+        {/* Azienda */}
+        <div className="md:col-span-2">
+          <label className="text-sm text-zinc-600">Azienda</label>
+          <select
+            name="customerId"
+            value={customerId}
+            onChange={(e) => onChangeCustomer(e.target.value)}
+            className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+          >
+            <option value="">Seleziona…</option>
+            {props.customers.map((c) => (
+              <option key={String(c.id)} value={String(c.id)}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <form action={action} onSubmit={handleSubmit} style={ui.form}>
-          <input type="hidden" name="id" value={props.id} />
-
-          <div style={ui.grid}>
-            <label style={ui.label}>
-              <div style={ui.labelText}>Tipo attività</div>
+        {isProduction && (
+          <>
+            {/* Modello */}
+            <div>
+              <label className="text-sm text-zinc-600">Modello</label>
               <select
-                name="activityType"
-                value={activityType}
-                onChange={(e) => onChangeActivityType(e.target.value as ActivityType)}
-                style={ui.field}
-              >
-                <option value="PRODUCTION">Produzione</option>
-                <option value="CLEANING">Pulizie</option>
-              </select>
-            </label>
-
-            <label style={ui.label}>
-              <div style={ui.labelText}>Data</div>
-              <input
-                type="date"
-                name="workDate"
-                value={workDate}
+                name="modelId"
+                value={modelId}
                 onChange={(e) => {
-                  setWorkDate(e.target.value);
+                  setModelId(e.target.value);
                   setClientError("");
                 }}
-                style={ui.field}
-              />
-            </label>
-
-            <label style={{ ...ui.label, ...ui.gridFull }}>
-              <div style={ui.labelText}>Azienda</div>
-              <select
-                name="customerId"
-                value={customerId}
-                onChange={(e) => onChangeCustomer(e.target.value)}
-                style={ui.field}
+                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                disabled={!customerId}
               >
-                <option value="">Seleziona…</option>
-                {props.customers.map((c) => (
-                  <option key={String(c.id)} value={String(c.id)}>
-                    {c.name}
+                <option value="">
+                  {customerId ? "Seleziona…" : "Seleziona prima un'azienda"}
+                </option>
+                {filteredModels.map((m) => (
+                  <option key={String(m.id)} value={String(m.id)}>
+                    {m.name} {m.code ? `(${m.code})` : ""}
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
 
-            {isProduction ? (
-              <>
-                <label style={ui.label}>
-                  <div style={ui.labelText}>Modello</div>
-                  <select
-                    name="modelId"
-                    value={modelId}
-                    onChange={(e) => {
-                      setModelId(e.target.value);
-                      setClientError("");
-                    }}
-                    style={ui.field}
-                    disabled={!customerId}
-                  >
-                    <option value="">{customerId ? "Seleziona…" : "Seleziona prima un'azienda"}</option>
-                    {filteredModels.map((m) => (
-                      <option key={String(m.id)} value={String(m.id)}>
-                        {m.name}
-                        {m.code ? ` (${m.code})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+            {/* Fase */}
+            <div>
+              <label className="text-sm text-zinc-600">Fase</label>
+              <select
+                name="phaseId"
+                value={phaseId}
+                onChange={(e) => {
+                  setPhaseId(e.target.value);
+                  setClientError("");
+                }}
+                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                disabled={!customerId}
+              >
+                <option value="">
+                  {customerId ? "Seleziona…" : "Seleziona prima un'azienda"}
+                </option>
+                {filteredPhases.map((p) => (
+                  <option key={String(p.id)} value={String(p.id)}>
+                    {p.sortOrder}. {p.name} {p.isFinal ? "(finale)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-                <label style={ui.label}>
-                  <div style={ui.labelText}>Fase</div>
-                  <select
-                    name="phaseId"
-                    value={phaseId}
-                    onChange={(e) => {
-                      setPhaseId(e.target.value);
-                      setClientError("");
-                    }}
-                    style={ui.field}
-                    disabled={!customerId}
-                  >
-                    <option value="">{customerId ? "Seleziona…" : "Seleziona prima un'azienda"}</option>
-                    {filteredPhases.map((p) => (
-                      <option key={String(p.id)} value={String(p.id)}>
-                        {p.sortOrder}. {p.name}
-                        {p.isFinal ? " (finale)" : ""}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label style={ui.label}>
-                  <div style={ui.labelText}>Quantità OK</div>
-                  <input
-                    type="number"
-                    name="qtyOk"
-                    min={0}
-                    value={qtyOk}
-                    onChange={(e) => {
-                      setQtyOk(e.target.value);
-                      setClientError("");
-                    }}
-                    style={ui.field}
-                  />
-                </label>
-
-                <label style={ui.label}>
-                  <div style={ui.labelText}>Quantità KO</div>
-                  <input
-                    type="number"
-                    name="qtyKo"
-                    min={0}
-                    value={qtyKo}
-                    onChange={(e) => {
-                      setQtyKo(e.target.value);
-                      setClientError("");
-                    }}
-                    style={ui.field}
-                  />
-                </label>
-              </>
-            ) : (
-              <>
-                <input type="hidden" name="modelId" value="" />
-                <input type="hidden" name="phaseId" value="" />
-                <input type="hidden" name="qtyOk" value="0" />
-                <input type="hidden" name="qtyKo" value="0" />
-              </>
-            )}
-
-            <label style={ui.label}>
-              <div style={ui.labelText}>Ora inizio</div>
+            {/* Quantità */}
+            <div>
+              <label className="text-sm text-zinc-600">Quantità OK</label>
               <input
-                type="time"
-                name="startTime"
-                value={startTime}
-                onChange={(e) => {
-                  setStartTime(e.target.value);
-                  setClientError("");
-                }}
-                style={ui.field}
+                type="number"
+                name="qtyOk"
+                min={0}
+                value={qtyOk}
+                onChange={(e) => setQtyOk(e.target.value)}
+                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
               />
-            </label>
+            </div>
 
-            <label style={ui.label}>
-              <div style={ui.labelText}>Ora fine</div>
+            <div>
+              <label className="text-sm text-zinc-600">Quantità KO</label>
               <input
-                type="time"
-                name="endTime"
-                value={endTime}
-                onChange={(e) => {
-                  setEndTime(e.target.value);
-                  setClientError("");
-                }}
-                style={ui.field}
+                type="number"
+                name="qtyKo"
+                min={0}
+                value={qtyKo}
+                onChange={(e) => setQtyKo(e.target.value)}
+                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
               />
-            </label>
+            </div>
+          </>
+        )}
 
-            <label style={{ ...ui.label, ...ui.gridFull }}>
-              <div style={ui.labelText}>Note (opzionale)</div>
-              <textarea
-                name="notes"
-                value={notes}
-                onChange={(e) => {
-                  setNotes(e.target.value);
-                  setClientError("");
-                }}
-                rows={4}
-                style={ui.textarea}
-              />
-            </label>
-          </div>
+        {/* Orari */}
+        <div>
+          <label className="text-sm text-zinc-600">Ora inizio</label>
+          <input
+            type="time"
+            name="startTime"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+          />
+        </div>
 
-          <div style={ui.footer}>
-            <button type="submit" disabled={pending} style={ui.btnPrimary}>
-              Salva modifiche
-            </button>
+        <div>
+          <label className="text-sm text-zinc-600">Ora fine</label>
+          <input
+            type="time"
+            name="endTime"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+          />
+        </div>
 
-            <Link href="/worker/logs" style={ui.btnSecondary}>
-              Annulla
-            </Link>
-          </div>
-        </form>
+        {/* Note */}
+        <div className="md:col-span-2">
+          <label className="text-sm text-zinc-600">Note</label>
+          <textarea
+            name="notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={4}
+            className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+          />
+        </div>
 
-        <p style={ui.hint}>Suggerimento: se cambi Azienda, potresti dover riselezionare Modello/Fase.</p>
+        {/* BOTTONI */}
+        <div className="md:col-span-2 flex justify-center gap-3 mt-2">
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-md bg-black px-5 py-2 text-sm text-white disabled:opacity-60"
+          >
+            Salva modifiche
+          </button>
 
-        <style jsx>{`
-          @media (max-width: 720px) {
-            form > div {
-              grid-template-columns: 1fr !important;
-            }
-          }
-        `}</style>
-      </div>
+          <Link
+            href="/worker/logs"
+            className="rounded-md border px-5 py-2 text-sm hover:bg-zinc-100"
+          >
+            Annulla
+          </Link>
+        </div>
+      </form>
+
+      <p className="mt-4 text-xs text-center text-zinc-500">
+        Suggerimento: se cambi Azienda, potresti dover riselezionare Modello/Fase.
+      </p>
     </div>
-  );
+  </div>
+);
 }

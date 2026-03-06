@@ -1,10 +1,12 @@
 // app/admin/models/page.tsx
-
 import { db } from "@/db";
 import { customers, models } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 import Link from "next/link";
 import ModelsListClient from "./ModelsListClient";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Row = {
   modelId: bigint;
@@ -67,26 +69,26 @@ export default async function ModelsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-black">Modelli</h1>
-          <p className="text-sm text-gray-600">
-            Prodotti/modelli raggruppati per azienda.
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">Modelli</h1>
+          <p className="text-sm text-muted-foreground">Prodotti/modelli raggruppati per azienda.</p>
         </div>
 
-        <Link
-          href="/admin/models/new"
-          className="rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-gray-800"
-        >
-          Nuovo Modello
-        </Link>
+        <Button asChild>
+          <Link href="/admin/models/new">Nuovo modello</Link>
+        </Button>
       </div>
 
       {groups.length === 0 ? (
-        <div className="rounded-md border bg-white p-6 text-sm text-gray-600">
-          Nessun modello presente.
-        </div>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Nessun modello</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Nessun modello presente.
+          </CardContent>
+        </Card>
       ) : (
         <ModelsListClient groups={groups} />
       )}

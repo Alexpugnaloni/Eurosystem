@@ -1,10 +1,13 @@
-// app/admin/worklogs/[id]/edit/page.tsx
 import { db } from "@/db";
 import { customers, models, phases, users, workLogs } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth";
 import { and, asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import EditWorkLogAdminForm from "./EditWorkLogAdminForm";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default async function AdminEditWorkLogPage({
   params,
@@ -15,18 +18,23 @@ export default async function AdminEditWorkLogPage({
   const { id } = await params;
 
   let logId: bigint;
+
   try {
     logId = BigInt(id);
   } catch {
     notFound();
   }
 
-  // Log (admin può vedere qualsiasi log)
-  const logRows = await db.select().from(workLogs).where(eq(workLogs.id, logId)).limit(1);
+  const logRows = await db
+    .select()
+    .from(workLogs)
+    .where(eq(workLogs.id, logId))
+    .limit(1);
+
   if (logRows.length === 0) notFound();
+
   const log = logRows[0];
 
-  // Dipendente collegato (per mostrare chi è / e per eventuale cambio in futuro)
   const userRows = await db
     .select({
       id: users.id,
@@ -41,6 +49,7 @@ export default async function AdminEditWorkLogPage({
     .limit(1);
 
   if (userRows.length === 0) notFound();
+
   const worker = userRows[0];
 
   const activeCustomers = await db
@@ -62,28 +71,56 @@ export default async function AdminEditWorkLogPage({
     .orderBy(asc(phases.customerId), asc(phases.sortOrder), asc(phases.name));
 
   return (
-    <EditWorkLogAdminForm
-      id={String(log.id)}
-      worker={{
-        id: String(worker.id),
-        label: `${worker.lastName} ${worker.firstName} (${worker.employeeCode})`,
-        isActive: worker.isActive,
-      }}
-      initial={{
-        workDate: log.workDate,
-        activityType: log.activityType,
-        customerId: String(log.customerId),
-        modelId: log.modelId ? String(log.modelId) : "",
-        phaseId: log.phaseId ? String(log.phaseId) : "",
-        startTime: (log.startTime ?? "").slice(0, 5), // HH:MM
-        endTime: (log.endTime ?? "").slice(0, 5), // HH:MM
-        qtyOk: String(log.qtyOk ?? 0),
-        qtyKo: String(log.qtyKo ?? 0),
-        notes: log.notes ?? "",
-      }}
-      customers={activeCustomers}
-      models={activeModels}
-      phases={activePhases}
-    />
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Modifica attività
+          </h1>
+
+          <p className="text-sm text-muted-foreground">
+            Modifica una attività registrata da un dipendente.
+          </p>
+        </div>
+
+        <Button asChild variant="outline">
+          <Link href="/admin/worklogs">Torna alle schede</Link>
+        </Button>
+      </div>
+
+      {/* Form */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Dettagli attività</CardTitle>
+        </CardHeader>
+
+        <CardContent>
+          <EditWorkLogAdminForm
+            id={String(log.id)}
+            worker={{
+              id: String(worker.id),
+              label: `${worker.lastName} ${worker.firstName} (${worker.employeeCode})`,
+              isActive: worker.isActive,
+            }}
+            initial={{
+              workDate: log.workDate,
+              activityType: log.activityType,
+              customerId: String(log.customerId),
+              modelId: log.modelId ? String(log.modelId) : "",
+              phaseId: log.phaseId ? String(log.phaseId) : "",
+              startTime: (log.startTime ?? "").slice(0, 5),
+              endTime: (log.endTime ?? "").slice(0, 5),
+              qtyOk: String(log.qtyOk ?? 0),
+              qtyKo: String(log.qtyKo ?? 0),
+              notes: log.notes ?? "",
+            }}
+            customers={activeCustomers}
+            models={activeModels}
+            phases={activePhases}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 }

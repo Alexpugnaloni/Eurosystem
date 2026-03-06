@@ -1,7 +1,10 @@
-// app/admin/reports/consegne/page.tsx
 import { db } from "@/db";
 import { customers, deliveries, models, phases, workLogs } from "@/db/schema";
 import { and, asc, eq, sql } from "drizzle-orm";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 type SearchParams = {
   customerId?: string;
@@ -27,7 +30,11 @@ export default async function ReportsConsegnePage({
     .where(eq(customers.isActive, true))
     .orderBy(asc(customers.name));
 
-  const readyWhere = [eq(workLogs.activityType, "PRODUCTION"), eq(phases.isFinal, true)];
+  const readyWhere = [
+    eq(workLogs.activityType, "PRODUCTION"),
+    eq(phases.isFinal, true),
+  ];
+
   if (customerId) readyWhere.push(eq(workLogs.customerId, customerId));
 
   const ready = await db
@@ -63,6 +70,7 @@ export default async function ReportsConsegnePage({
     .groupBy(customers.id, models.id);
 
   const deliveredMap = new Map<Key, number>();
+
   for (const d of delivered) {
     deliveredMap.set(key(d.customerId, d.modelId), Number(d.deliveredQty));
   }
@@ -71,6 +79,7 @@ export default async function ReportsConsegnePage({
     .map((r) => {
       const deliveredQty = deliveredMap.get(key(r.customerId, r.modelId)) ?? 0;
       const availableQty = Number(r.readyQty) - deliveredQty;
+
       return {
         customerId: r.customerId,
         customerName: r.customerName,
@@ -86,86 +95,145 @@ export default async function ReportsConsegnePage({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border bg-white p-5">
-        <h2 className="text-lg font-semibold text-black">Disponibili per consegna</h2>
-        <p className="text-sm text-gray-600">
-          Calcolo: OK registrati in fasi finali − quantità consegnate (deliveries).
+
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Report consegne
+        </h1>
+
+        <p className="text-sm text-muted-foreground">
+          Prodotti disponibili per consegna (OK finali − consegne registrate).
         </p>
+      </div>
 
-        <form method="get" className="mt-4 flex flex-wrap items-end gap-3">
-          <div className="flex flex-col gap-1">
-            <label className="text-sm text-black">Azienda (opzionale)</label>
-            <select
-              name="customerId"
-              defaultValue={sp.customerId ?? ""}
-              className="rounded-md border px-3 py-2 text-sm text-black"
-            >
-              <option value="">Tutte</option>
-              {activeCustomers.map((c) => (
-                <option key={String(c.id)} value={String(c.id)}>
-                  {c.name}
-                  {c.isInternal ? " (Interna)" : ""}
-                </option>
-              ))}
-            </select>
-          </div>
+      {/* Filtri */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            Filtri
+          </CardTitle>
+        </CardHeader>
 
-          <button className="rounded-md bg-black px-4 py-2 text-sm text-white">
-            Applica
-          </button>
+        <CardContent>
+          <form method="get" className="flex flex-wrap items-end gap-3">
 
-          <a
-            href="/admin/reports/consegne"
-            className="rounded-md border px-4 py-2 text-sm text-black hover:bg-gray-100"
-          >
-            Reset
-          </a>
-        </form>
-      </section>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm">
+                Azienda
+              </label>
 
-      <section className="rounded-lg border bg-white p-5">
-        <div className="overflow-hidden rounded-md border">
+              <select
+                name="customerId"
+                defaultValue={sp.customerId ?? ""}
+                className="h-10 rounded-md border border-input px-3"
+              >
+                <option value="">Tutte</option>
+
+                {activeCustomers.map((c) => (
+                  <option key={String(c.id)} value={String(c.id)}>
+                    {c.name}
+                    {c.isInternal ? " (Interna)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Button type="submit">
+              Applica
+            </Button>
+
+            <Button asChild variant="outline">
+              <a href="/admin/reports/consegne">
+                Reset
+              </a>
+            </Button>
+
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Tabella risultati */}
+      <Card>
+
+        <CardHeader>
+          <CardTitle className="text-base">
+            Disponibili per consegna
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className="overflow-x-auto">
+
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left">
-              <tr className="text-gray-700">
-                <th className="px-4 py-3">Azienda</th>
-                <th className="px-4 py-3">Modello</th>
-                <th className="px-4 py-3">Pronti</th>
-                <th className="px-4 py-3">Consegnati</th>
-                <th className="px-4 py-3">Disponibili</th>
+
+            <thead className="border-b text-left">
+              <tr className="text-muted-foreground">
+                <th className="py-2 pr-4">Azienda</th>
+                <th className="py-2 pr-4">Modello</th>
+                <th className="py-2 pr-4">Pronti</th>
+                <th className="py-2 pr-4">Consegnati</th>
+                <th className="py-2 pr-4">Disponibili</th>
               </tr>
             </thead>
+
             <tbody>
+
               {rows.length === 0 ? (
                 <tr>
-                  <td className="px-4 py-4 text-gray-600" colSpan={5}>
-                    Nessun modello disponibile per consegna (in base ai dati attuali).
+                  <td colSpan={5} className="py-4 text-muted-foreground">
+                    Nessun modello disponibile per consegna.
                   </td>
                 </tr>
               ) : (
                 rows.map((r) => (
-                  <tr key={`${r.customerId}-${r.modelId}`} className="border-t">
-                    <td className="px-4 py-3 text-black">
+                  <tr key={`${r.customerId}-${r.modelId}`} className="border-b">
+
+                    <td className="py-2 pr-4">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{r.customerName}</span>
-                        {r.isInternal ? (
-                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+
+                        <span className="font-medium">
+                          {r.customerName}
+                        </span>
+
+                        {r.isInternal && (
+                          <Badge variant="outline">
                             Interna
-                          </span>
-                        ) : null}
+                          </Badge>
+                        )}
+
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-black">{r.modelName}</td>
-                    <td className="px-4 py-3 text-black">{r.readyQty}</td>
-                    <td className="px-4 py-3 text-black">{r.deliveredQty}</td>
-                    <td className="px-4 py-3 text-black font-semibold">{r.availableQty}</td>
+
+                    <td className="py-2 pr-4 font-medium">
+                      {r.modelName}
+                    </td>
+
+                    <td className="py-2 pr-4">
+                      {r.readyQty}
+                    </td>
+
+                    <td className="py-2 pr-4">
+                      {r.deliveredQty}
+                    </td>
+
+                    <td className="py-2 pr-4">
+                      <Badge>
+                        {r.availableQty}
+                      </Badge>
+                    </td>
+
                   </tr>
                 ))
               )}
+
             </tbody>
+
           </table>
-        </div>
-      </section>
+
+        </CardContent>
+
+      </Card>
+
     </div>
   );
 }

@@ -1,11 +1,13 @@
 // app/admin/models/[id]/edit/page.tsx
-
 import { db } from "@/db";
 import { customers, models } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import EditModelForm from "./EditModelForm";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default async function EditModelPage({
   params,
@@ -53,34 +55,34 @@ export default async function EditModelPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-black">Modifica Modello</h1>
-          <p className="text-sm text-gray-600">
-            Aggiorna dati e stato del modello.
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">Modifica modello</h1>
+          <p className="text-sm text-muted-foreground">Aggiorna dati e stato del modello.</p>
         </div>
 
-        <Link
-          href="/admin/models"
-          className="rounded-md border px-3 py-2 text-sm text-black hover:bg-gray-100"
-        >
-          ← Indietro
-        </Link>
+        <Button asChild variant="outline">
+          <Link href="/admin/models">Torna alla lista</Link>
+        </Button>
       </div>
 
-      <div className="rounded-md border bg-white p-6">
-        <EditModelForm
-          model={{
-            id: model.id.toString(),
-            customerId: model.customerId.toString(),
-            name: model.name,
-            code: model.code ?? "",
-            isActive: model.isActive,
-          }}
-          customers={customerOptions}
-        />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Dettagli</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EditModelForm
+            model={{
+              id: model.id.toString(),
+              customerId: model.customerId.toString(),
+              name: model.name,
+              code: model.code ?? "",
+              isActive: model.isActive,
+            }}
+            customers={customerOptions}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

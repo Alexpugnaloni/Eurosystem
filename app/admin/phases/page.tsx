@@ -7,6 +7,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import PhasesClient from "./PhasesClient";
 
+import { Button } from "@/components/ui/button";
+
 type Row = {
   phaseId: bigint;
   phaseName: string;
@@ -69,18 +71,17 @@ export default async function PhasesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-black">Fasi</h1>
-          <p className="text-sm text-gray-600">Fasi di produzione per azienda (ordinate per sortOrder).</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Fasi</h1>
+          <p className="text-sm text-muted-foreground">
+            Fasi di produzione per azienda (ordinate per sortOrder).
+          </p>
         </div>
 
-        <Link
-          href="/admin/phases/new"
-          className="rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-gray-800"
-        >
-          Nuova fase
-        </Link>
+        <Button asChild>
+          <Link href="/admin/phases/new">Nuova fase</Link>
+        </Button>
       </div>
 
       <PhasesClient customers={customersList} phases={phasesList} />

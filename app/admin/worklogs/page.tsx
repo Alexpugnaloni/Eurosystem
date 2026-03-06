@@ -5,6 +5,10 @@ import { requireAdmin } from "@/lib/auth";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import AdminWorkLogsClient from "./AdminWorkLogsClient";
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
 function isoDate(d: Date) {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -65,7 +69,6 @@ export default async function AdminWorkLogsPage({
 
   const customerId = parseBigintParam(sp.customerId);
 
-  // Date inserite dall'utente (possono essere vuote)
   const rawDateFrom = parseStringParam(sp.dateFrom);
   const rawDateTo = parseStringParam(sp.dateTo);
 
@@ -75,13 +78,11 @@ export default async function AdminWorkLogsPage({
   const hasAnyDate = Boolean(rawDateFrom || rawDateTo);
   const hasUserOnly = Boolean(userId && !hasAnyDate);
 
-  // ✅ solo dipendente (senza date) => ultimi 30 giorni
   if (hasUserOnly) {
     dateFrom = daysAgoISO(29);
     dateTo = todayISO();
   }
 
-  // Worker list (select)
   const workers = await db
     .select({
       id: users.id,
@@ -93,14 +94,12 @@ export default async function AdminWorkLogsPage({
     .where(and(eq(users.role, "WORKER"), eq(users.isActive, true)))
     .orderBy(asc(users.lastName), asc(users.firstName));
 
-  // Customer list (select)
   const custs = await db
     .select({ id: customers.id, name: customers.name })
     .from(customers)
     .where(eq(customers.isActive, true))
     .orderBy(asc(customers.name));
 
-  // ✅ Se non c'è nessun filtro utile, non queryiamo
   const shouldQuery = Boolean(userId || hasAnyDate || customerId || activityType);
 
   const whereParts = [
@@ -143,7 +142,6 @@ export default async function AdminWorkLogsPage({
         .limit(userId ? 2000 : 300)
     : [];
 
-  // Group by day (cards)
   const byDate = new Map<string, typeof rows>();
   for (const r of rows) {
     const key = r.workDate;
@@ -168,8 +166,8 @@ export default async function AdminWorkLogsPage({
 
   const showHint = !shouldQuery;
 
-  // ✅ Label periodo sopra le card
   let periodLabel: string | null = null;
+
   if (!showHint) {
     if (hasUserOnly) {
       periodLabel = "Ultimi 30 giorni";
@@ -180,115 +178,123 @@ export default async function AdminWorkLogsPage({
     } else if (rawDateTo) {
       periodLabel = `Fino al ${formatIT(rawDateTo)}`;
     } else {
-      // es: filtri solo azienda/tipo senza date
       periodLabel = "Periodo non specificato";
     }
   }
 
   return (
-    <div className="p-4 text-black">
-      <h1 className="text-xl font-bold mb-3">Schede dipendenti</h1>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Schede dipendenti</h1>
+        <p className="text-sm text-muted-foreground">
+          Consulta e modifica le attività registrate dai dipendenti.
+        </p>
+      </div>
 
-      <form
-        method="GET"
-        className="grid gap-3"
-        style={{ gridTemplateColumns: "repeat(6, minmax(0, 1fr))", alignItems: "end" }}
-      >
-        <label className="grid gap-1">
-          <span>Da</span>
-          <input
-            name="dateFrom"
-            type="date"
-            defaultValue={rawDateFrom ?? ""}
-            className="p-2 border rounded text-black"
-          />
-        </label>
+      {/* Filtri */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Filtri</CardTitle>
+        </CardHeader>
 
-        <label className="grid gap-1">
-          <span>A</span>
-          <input
-            name="dateTo"
-            type="date"
-            defaultValue={rawDateTo ?? ""}
-            className="p-2 border rounded text-black"
-          />
-        </label>
+        <CardContent>
+          <form method="GET" className="grid gap-4 md:grid-cols-6 items-end">
+            <label className="grid gap-1 text-sm">
+              <span>Da</span>
+              <input
+                name="dateFrom"
+                type="date"
+                defaultValue={rawDateFrom ?? ""}
+                className="h-10 rounded-md border border-input px-3"
+              />
+            </label>
 
-        <label className="grid gap-1">
-          <span>Dipendente</span>
-          <select
-            name="userId"
-            defaultValue={userId ? String(userId) : ""}
-            className="p-2 border rounded text-black"
-          >
-            <option value="">(seleziona)</option>
-            {workers.map((w) => (
-              <option key={String(w.id)} value={String(w.id)}>
-                {w.lastName} {w.firstName} ({w.employeeCode})
-              </option>
-            ))}
-          </select>
-        </label>
+            <label className="grid gap-1 text-sm">
+              <span>A</span>
+              <input
+                name="dateTo"
+                type="date"
+                defaultValue={rawDateTo ?? ""}
+                className="h-10 rounded-md border border-input px-3"
+              />
+            </label>
 
-        <label className="grid gap-1">
-          <span>Tipo</span>
-          <select
-            name="activityType"
-            defaultValue={activityType ?? ""}
-            className="p-2 border rounded text-black"
-          >
-            <option value="">Tutti</option>
-            <option value="PRODUCTION">Produzione</option>
-            <option value="CLEANING">Pulizie</option>
-          </select>
-        </label>
+            <label className="grid gap-1 text-sm">
+              <span>Dipendente</span>
+              <select
+                name="userId"
+                defaultValue={userId ? String(userId) : ""}
+                className="h-10 rounded-md border border-input px-3"
+              >
+                <option value="">(seleziona)</option>
+                {workers.map((w) => (
+                  <option key={String(w.id)} value={String(w.id)}>
+                    {w.lastName} {w.firstName} ({w.employeeCode})
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <label className="grid gap-1">
-          <span>Azienda</span>
-          <select
-            name="customerId"
-            defaultValue={customerId ? String(customerId) : ""}
-            className="p-2 border rounded text-black"
-          >
-            <option value="">Tutte</option>
-            {custs.map((c) => (
-              <option key={String(c.id)} value={String(c.id)}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            <label className="grid gap-1 text-sm">
+              <span>Tipo</span>
+              <select
+                name="activityType"
+                defaultValue={activityType ?? ""}
+                className="h-10 rounded-md border border-input px-3"
+              >
+                <option value="">Tutti</option>
+                <option value="PRODUCTION">Produzione</option>
+                <option value="CLEANING">Pulizie</option>
+              </select>
+            </label>
 
-        <button type="submit" className="p-2 border rounded">
-          Applica
-        </button>
-      </form>
+            <label className="grid gap-1 text-sm">
+              <span>Azienda</span>
+              <select
+                name="customerId"
+                defaultValue={customerId ? String(customerId) : ""}
+                className="h-10 rounded-md border border-input px-3"
+              >
+                <option value="">Tutte</option>
+                {custs.map((c) => (
+                  <option key={String(c.id)} value={String(c.id)}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <Button type="submit">Applica</Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {showHint ? (
-        <div className="mt-4 p-3 border rounded bg-white">
-          Seleziona un <b>dipendente</b> per vedere automaticamente gli <b>ultimi 30 giorni</b>,
-          oppure imposta un <b>periodo</b> (Da / A) e premi <b>Applica</b>.
-        </div>
+        <Card>
+          <CardContent className="py-6 text-sm">
+            Seleziona un <b>dipendente</b> per vedere automaticamente gli{" "}
+            <b>ultimi 30 giorni</b>, oppure imposta un <b>periodo</b>.
+          </CardContent>
+        </Card>
       ) : (
         <>
           {periodLabel && (
-            <div className="mt-4 mb-2 p-2 border rounded bg-white">
-              <b>Periodo ricerca:</b> {periodLabel}
-            </div>
+            <Card>
+              <CardContent className="py-3 text-sm">
+                <b>Periodo ricerca:</b> {periodLabel}
+              </CardContent>
+            </Card>
           )}
 
-          <div className="flex gap-3 mt-2 mb-3">
-            <div>
-              <b>Produzione:</b> {fmtMin(totalProd)}
-            </div>
-            <div>
-              <b>Pulizie:</b> {fmtMin(totalClean)}
-            </div>
-            <div>
-              <b>Totale:</b> {fmtMin(totalAll)}
-            </div>
-            <div className="ml-auto">
-              <b>Righe:</b> {rows.length}
+          {/* Totali */}
+          <div className="flex flex-wrap gap-3">
+            <Badge variant="secondary">Produzione: {fmtMin(totalProd)}</Badge>
+            <Badge variant="secondary">Pulizie: {fmtMin(totalClean)}</Badge>
+            <Badge>Totale: {fmtMin(totalAll)}</Badge>
+
+            <div className="ml-auto text-sm text-muted-foreground">
+              Righe: {rows.length}
             </div>
           </div>
 

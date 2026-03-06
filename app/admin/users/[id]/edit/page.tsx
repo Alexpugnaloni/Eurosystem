@@ -7,17 +7,16 @@ import { eq } from "drizzle-orm";
 import Link from "next/link";
 import EditUserForm from "./EditUserForm";
 
-export default async function EditUserPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+export default async function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
   const me = await requireUser();
   if (me.role !== "ADMIN") redirect("/worker");
 
   const { id } = await params;
-  if (!/^\d+$/.test(id)) redirect("/admin/users");        
-  const userId = BigInt(id); 
+  if (!/^\d+$/.test(id)) redirect("/admin/users");
+  const userId = BigInt(id);
 
   const rows = await db
     .select({
@@ -37,35 +36,40 @@ export default async function EditUserPage({
   if (!u) redirect("/admin/users");
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-black">Modifica utente</h1>
-        <Link href="/admin/users" className="text-sm text-black underline">
-          Torna alla lista
-        </Link>
-      </div>
-
-      <div className="rounded-lg border bg-white p-6">
-        <div className="mb-4 text-sm text-black">
-          <div>
-            <span className="font-semibold">Employee code:</span> {u.employeeCode}
-          </div>
-          <div>
-            <span className="font-semibold">Username:</span> {u.username}
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Modifica utente</h1>
+          <p className="text-sm text-muted-foreground">Aggiorna dati e (se serve) resetta password.</p>
         </div>
 
-        <EditUserForm
-          userId={String(u.id)}
-          defaultFirstName={u.firstName}
-          defaultLastName={u.lastName}
-          defaultIsActive={u.isActive}
-        />
+        <Button asChild variant="outline">
+          <Link href="/admin/users">Torna alla lista</Link>
+        </Button>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Dettagli</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="text-sm">
+            <div>
+              <span className="font-semibold">Employee code:</span> {u.employeeCode}
+            </div>
+            <div>
+              <span className="font-semibold">Username:</span> {u.username}
+            </div>
+          </div>
+
+          <EditUserForm
+            userId={String(u.id)}
+            defaultFirstName={u.firstName}
+            defaultLastName={u.lastName}
+            defaultIsActive={u.isActive}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }
-
-
-
-
